@@ -61,18 +61,17 @@ final class BarcodeInputViewModel: ObservableObject {
     }
     
     // Логика, которая запускается при успешном сканировании
-    func handleScannedCode() {
-        // ⚠️ ВАЖНО: Проверка на nil, так как scannedCode - String?
-        if let code = scannedCode {
-            self.barcode = code              // 1. 🎉 Передача результата в поле 'barcode'
-            self.statusMessage = "✅ Штрихкод успешно отсканирован."
-            self.scannedCode = nil           // 2. Сброс
-            
-            // 3. (Опционально) Сразу запускаем поиск после успешного сканирования
-            // findProduct()
-            
-        } else {
-            self.statusMessage = "Код не был получен."
+    func handleScanResult(result: Result<String, CodeScannerView.ScannerError>) {
+        isScanning = false // Закрываем модальное окно сканера
+        switch result {
+        case .success(let code):
+            self.barcode = code
+            // После успешного сканирования сразу запускаем поиск продукта
+            findProduct()
+        case .failure(let error):
+            // Показываем ошибку сканирования
+            self.alertMessage = "Сканирование: \(error.localizedDescription)"
+            self.showingAlert = true
         }
     }
     

@@ -67,6 +67,20 @@ struct BarcodeInputView: View {
         }
         .padding(.top, 30)
         
+        .sheet(isPresented: $viewModel.isScanning) {
+            CodeScannerView { result in
+                viewModel.handleScanResult(result: result)
+            }
+            // Игнорируем безопасные области, чтобы сканер занимал весь экран
+            .ignoresSafeArea()
+        }
+        // Уведомление об ошибках
+        .alert("Ошибка поиска продукта", isPresented: $viewModel.showingAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.alertMessage)
+        }
+        
         .alert("Ошибка поиска продукта", isPresented: $viewModel.showingAlert) {
             Button("OK", role: .cancel) { }
         } message: {
