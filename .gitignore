@@ -1,0 +1,22 @@
+# Временные файлы и кэш macOS
+.DS_Store
+
+# Основные выходные данные сборки Xcode
+build/
+DerivedData/
+
+# Настройки пользователя Xcode
+# Все, что находится внутри этой папки, является личными настройками
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Файлы кэша схем и рабочего пространства (если не используются Pods/SPM)
+*.xcodeproj/project.xcworkspace/
+*.xcworkspace/
+*.playground/xcuserdata/
+
+# Swift Package Manager (SPM)
+.build/
+
+# CocoaPods (игнорируем сами библиотеки, но сохраняем Podfile.lock)
+Pods/
