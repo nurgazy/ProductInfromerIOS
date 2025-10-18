@@ -1,0 +1,191 @@
+import Foundation
+import SwiftUI
+import Combine
+import SwiftKeychainWrapper
+
+struct ConnectionSettings {
+    let protocolSelection: String
+    let serverAddress: String
+    let port: Int
+    let publicationName: String
+    let username: String
+    let password: String
+    let isFullSpecific: Bool
+}
+
+final class BarcodeInputViewModel: ObservableObject {
+    
+    @Published var isSearching: Bool = false
+    @Published var isActiveLink: Bool = false      // Для iOS 15-
+    
+    @Published var barcode: String = ""
+    @Published var isScanning: Bool = false
+    @Published var scannedCode: String? = nil
+    @Published var statusMessage: String = ""
+    
+    @Published var showingAlert: Bool = false
+    @Published var alertMessage: String = ""
+    
+    private var connectionSettings: ConnectionSettings
+    private var coordinatorPath: Binding<NavigationPath?>
+    
+    init(coordinatorPath: Binding<NavigationPath?>) {
+        self.coordinatorPath = coordinatorPath // Сохраняем привязку
+        self.connectionSettings = BarcodeInputViewModel.loadConnectionSettings()
+    }
+    
+    private static func loadConnectionSettings() -> ConnectionSettings {
+        let defaults = UserDefaults.standard
+        
+        let protocolSelection = defaults.string(forKey: SettingKeys.protocolSelection) ?? "HTTPS"
+        let serverAddress = defaults.string(forKey: SettingKeys.serverAddress) ?? ""
+        let savedPort = defaults.integer(forKey: SettingKeys.port)
+        let port = savedPort > 0 ? savedPort : 443
+        let publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? ""
+        let username = defaults.string(forKey: SettingKeys.username) ?? ""
+        
+        // 🔑 Загрузка пароля из Keychain
+        let password = KeychainWrapper.standard.string(forKey: SettingKeys.password) ?? ""
+        
+        let isFullSpecific = defaults.bool(forKey: SettingKeys.isFullSpecific)
+        
+        return ConnectionSettings(
+            protocolSelection: protocolSelection,
+            serverAddress: serverAddress,
+            port: port,
+            publicationName: publicationName,
+            username: username,
+            password: password,
+            isFullSpecific: isFullSpecific
+        )
+    }
+    
+    // Логика, которая запускается при успешном сканировании
+    func handleScannedCode() {
+        // ⚠️ ВАЖНО: Проверка на nil, так как scannedCode - String?
+        if let code = scannedCode {
+            self.barcode = code              // 1. 🎉 Передача результата в поле 'barcode'
+            self.statusMessage = "✅ Штрихкод успешно отсканирован."
+            self.scannedCode = nil           // 2. Сброс
+            
+            // 3. (Опционально) Сразу запускаем поиск после успешного сканирования
+            // findProduct()
+            
+        } else {
+            self.statusMessage = "Код не был получен."
+        }
+    }
+    
+    // Логика кнопки "Найти"
+    func findProduct() {
+        
+        guard !barcode.isEmpty else {
+            self.alertMessage =  "❌ Введите или отсканируйте штрихкод."
+            self.showingAlert = true
+            return
+        }
+        
+        guard let url = buildSearchURL(barcode: barcode) else {
+            self.alertMessage =  "❌ Ошибка: Невозможно построить корректный URL."
+            self.showingAlert = true
+            return
+        }
+        
+        self.statusMessage = "🔍 Поиск продукта \(barcode) на сервере..."
+        
+        // 1. Создание запроса с аутентификацией
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        let authString = "\(connectionSettings.username):\(connectionSettings.password)"
+        if let data = authString.data(using: .utf8) {
+            let base64Auth = data.base64EncodedString()
+            request.setValue("Basic \(base64Auth)", forHTTPHeaderField: "Authorization")
+        }
+        
+        // 2. Выполнение асинхронного запроса
+        Task {
+            
+            await MainActor.run {
+                self.isSearching = true
+                self.showingAlert = false
+                self.alertMessage = ""
+            } // 🟢 START LOADING
+            
+            defer {
+                Task { @MainActor in self.isSearching = false } // 🟢 END LOADING
+            }
+
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw URLError(.badServerResponse)
+                }
+                
+                // 3. Получаем сырую строку JSON
+                guard let jsonString = String(data: data, encoding: .utf8) else {
+                    await MainActor.run {
+                        self.alertMessage = "❌ Ошибка: Не удалось прочитать ответ сервера как текст."
+                        self.showingAlert = true
+                    }
+                    return
+                }
+                
+                await MainActor.run {
+                    if httpResponse.statusCode == 200 {
+                        self.navigateToProductDetail(productString: jsonString)
+                        
+                    } else if httpResponse.statusCode == 401 {
+                        self.alertMessage = "❌ Ошибка 401: Неверный пользователь/пароль. Проверьте настройки подключения."
+                        self.showingAlert = true
+                    } else {
+                        self.alertMessage = "⚠️ Ошибка сервера: Код \(httpResponse.statusCode). Ответ: \(jsonString.prefix(100))..."
+                        self.showingAlert = true
+                    }
+                }
+            } catch {
+                // ❌ Ошибка сети/домена
+                await MainActor.run {
+                    self.alertMessage = "❌ Ошибка сети: Не удалось подключиться к \(self.connectionSettings.serverAddress). Причина: \(error.localizedDescription)"
+                    self.showingAlert = true
+
+                }
+            }
+        }
+    }
+    
+    private func buildSearchURL(barcode: String) -> URL? {
+        // Базовый путь остается прежним
+        let basePath = "/hs/ProductInformation/Info"
+        
+        var components = URLComponents()
+        components.scheme = connectionSettings.protocolSelection.lowercased()
+        components.host = connectionSettings.serverAddress
+        components.port = connectionSettings.port
+        components.path = "/\(connectionSettings.publicationName)\(basePath)"
+        
+        var queryItems = [
+            URLQueryItem(name: "barcode", value: barcode)
+        ]
+
+        queryItems.append(
+            URLQueryItem(name: "full", value: connectionSettings.isFullSpecific ? "true" : "false")
+        )
+
+        components.queryItems = queryItems
+
+        return components.url
+    }
+    
+    private func navigateToProductDetail(productString: String) {
+        
+        if #available(iOS 16.0, *) {
+            // Use NavigationPath for iOS 16+
+            let target = AppNavigationTarget(destinationID: "productDetail", productString: productString)
+            coordinatorPath.wrappedValue?.append(AppNavigation.view(target))
+        } else {
+            // Use NavigationLink's isActive binding for iOS 15-
+            isActiveLink = true
+        }
+    }
+}
