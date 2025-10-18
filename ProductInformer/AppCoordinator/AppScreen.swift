@@ -1,8 +1,7 @@
-//
-//  AppScreen.swift
-//  ProductInformer
-//
-//  Created by Nurgazy on 18/10/25.
-//
+import SwiftUI
 
-import Foundation
+enum AppScreen: Hashable {
+    case barcodeInput
+    case settings
+    case productDetail
+}

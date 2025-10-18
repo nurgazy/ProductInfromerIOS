@@ -1,10 +1,3 @@
-//
-//  ProductNavigationTarget.swift
-//  ProductInformer
-//
-//  Created by Nurgazy on 14/10/25.
-//
-
 import Foundation
 
 // ProductModels.swift or AppNavigation.swift
