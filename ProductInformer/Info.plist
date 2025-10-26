@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Ваше разрешение необходимо для того, чтобы вы могли считать штрихкод</string>
+	<string>Камера используется для сканирования штрих-кодов товаров, чтобы получать информацию о них</string>
 </dict>
 </plist>
