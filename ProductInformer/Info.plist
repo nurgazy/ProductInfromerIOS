@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Камера используется для сканирования штрих-кодов товаров, чтобы получать информацию о них</string>
+	<string>The camera is used to scan product barcodes to display detailed information from the database.</string>
 </dict>
 </plist>
