@@ -62,7 +62,7 @@ struct SettingsView: View {
                 HStack{
                     Text("Протокол")
                     Spacer()
-                    Picker("Протокол", selection: $viewModel.protocolSelection) {
+                    Picker("", selection: $viewModel.protocolSelection) {
                         ForEach(viewModel.protocols, id: \.self) { Text($0) }
                     }
                     .onChange(of: viewModel.protocolSelection) { newProtocol in
