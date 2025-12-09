@@ -11,7 +11,6 @@ struct BarcodeInputView: View {
     }
     
     var body: some View {
-        // Обернем в NavigationStack, чтобы видеть заголовок
         
         VStack {
             
@@ -19,7 +18,6 @@ struct BarcodeInputView: View {
             
             VStack(spacing: 15) {
                 
-                // 1. Поле для ввода штрихкода
                 TextField("Введите штрихкод", text: $viewModel.barcode)
                     .padding()
                     .background(Color(.systemGray6))
@@ -28,10 +26,8 @@ struct BarcodeInputView: View {
                     .autocorrectionDisabled(true)
                     .padding(.horizontal)
                 
-                // Горизонтальный стек для кнопок
                 HStack(spacing: 15) {
-                    
-                    // 2. Кнопка "Сканировать"
+
                     Button {
                         viewModel.isScanning = true
                     } label: {
@@ -43,7 +39,6 @@ struct BarcodeInputView: View {
                             .cornerRadius(10)
                     }
                     
-                    // 3. Кнопка "Найти" (Обработать)
                     Button {
                         viewModel.findProduct()
                     } label: {
@@ -63,7 +58,7 @@ struct BarcodeInputView: View {
                 }
                 
             }
-            .padding(.bottom, 40) // Отступ между кнопками и нижним краем
+            .padding(.bottom, 40)
         }
         .padding(.top, 30)
         
@@ -71,16 +66,14 @@ struct BarcodeInputView: View {
             CodeScannerView { result in
                 viewModel.handleScanResult(result: result)
             }
-            // Игнорируем безопасные области, чтобы сканер занимал весь экран
+            .onDisappear {
+                viewModel.isScanning = false
+                if viewModel.showingAlert {
+                    viewModel.showingAlert = false
+                }
+            }
             .ignoresSafeArea()
         }
-        // Уведомление об ошибках
-        .alert("Ошибка поиска продукта", isPresented: $viewModel.showingAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(viewModel.alertMessage)
-        }
-        
         .alert("Ошибка поиска продукта", isPresented: $viewModel.showingAlert) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -91,7 +84,6 @@ struct BarcodeInputView: View {
 
 }
 
-// Предпросмотр (Preview)
 #Preview {
     BarcodeInputView()
 }

@@ -188,7 +188,7 @@ final class SettingsViewModel: ObservableObject {
     
     private func buildCheckURL() -> URL? {
         
-        var path = "/\(publicationName)/hs/ProductInformation/Ping"
+        let path = "/\(publicationName)/hs/ProductInformation/Ping"
         
         var components = URLComponents()
         components.scheme = protocolSelection.lowercased()

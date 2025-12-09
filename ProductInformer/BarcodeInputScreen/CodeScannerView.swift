@@ -197,7 +197,7 @@ class ScannerViewController: UIViewController {
         // Настраиваем вывод для обработки метаданных
         metadataOutput.setMetadataObjectsDelegate(delegate as? AVCaptureMetadataOutputObjectsDelegate, queue: DispatchQueue.main)
         // Указываем, какие типы штрихкодов мы ищем (EAN-13 и QR как основные)
-        metadataOutput.metadataObjectTypes = [.ean13, .qr, .code128, .ean8]
+        metadataOutput.metadataObjectTypes = [.ean13, .code128, .ean8]
         
         // Настройка слоя предпросмотра
         previewLayer = AVCaptureVideoPreviewLayer(session: captureSession!)
@@ -244,12 +244,26 @@ class ScannerViewController: UIViewController {
     // MARK: - UI
     
     private func addDismissButton() {
+//        let dismissButton = UIButton(type: .system)
+//        dismissButton.setTitle("Отмена", for: .normal)
+//        dismissButton.setTitleColor(.white, for: .normal)
+//        dismissButton.backgroundColor = UIColor(white: 0, alpha: 0.5)
+//        dismissButton.layer.cornerRadius = 10
+//        //dismissButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 20, bottom: 10, right: 20)
+//        dismissButton.translatesAutoresizingMaskIntoConstraints = false
+//        dismissButton.addTarget(self, action: #selector(dismissScanner), for: .touchUpInside)
+//        
+//        view.addSubview(dismissButton)
+        
+        var config = UIButton.Configuration.filled()
+        config.title = "Отмена"
+        config.baseForegroundColor = .white
+        config.background.backgroundColor = UIColor(white: 0, alpha: 0.5)
+        config.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20)
+        
         let dismissButton = UIButton(type: .system)
-        dismissButton.setTitle("Отмена", for: .normal)
-        dismissButton.setTitleColor(.white, for: .normal)
-        dismissButton.backgroundColor = UIColor(white: 0, alpha: 0.5)
+        dismissButton.configuration = config
         dismissButton.layer.cornerRadius = 10
-        dismissButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 20, bottom: 10, right: 20)
         dismissButton.translatesAutoresizingMaskIntoConstraints = false
         dismissButton.addTarget(self, action: #selector(dismissScanner), for: .touchUpInside)
         
@@ -262,7 +276,6 @@ class ScannerViewController: UIViewController {
     }
 
     @objc private func dismissScanner() {
-        // Принудительное закрытие пользователем
         delegate?.scannerDidFail(error: .simulatedError)
     }
 }

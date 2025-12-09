@@ -69,7 +69,9 @@ final class BarcodeInputViewModel: ObservableObject {
             // После успешного сканирования сразу запускаем поиск продукта
             findProduct()
         case .failure(let error):
-            // Показываем ошибку сканирования
+            if error == .simulatedError {
+                return
+            }
             self.alertMessage = "Сканирование: \(error.localizedDescription)"
             self.showingAlert = true
         }
