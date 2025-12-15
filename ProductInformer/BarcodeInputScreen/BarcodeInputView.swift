@@ -53,12 +53,6 @@ struct BarcodeInputView: View {
                 }
                 .padding(.horizontal)
                 
-                #if DEBUG
-                Button("Тестовый скан") {
-                    viewModel.handleScanResult(result: .success("2000000512518"))
-                }
-                #endif
-                
                 if(viewModel.isSearching) {
                     ProgressView()
                 }
@@ -74,9 +68,6 @@ struct BarcodeInputView: View {
             }
             .onDisappear {
                 viewModel.isScanning = false
-                if viewModel.showingAlert {
-                    viewModel.showingAlert = false
-                }
             }
             .ignoresSafeArea()
         }

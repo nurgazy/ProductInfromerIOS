@@ -134,6 +134,25 @@ final class BarcodeInputViewModel: ObservableObject {
                 
                 await MainActor.run {
                     if httpResponse.statusCode == 200 {
+                        
+                        if let jsonData = jsonString.data(using: .utf8) {
+                            do {
+                                let decoder = JSONDecoder()
+                                let productResponse = try decoder.decode(ProductResponse.self, from: jsonData)
+                                if !productResponse.result{
+                                    self.alertMessage = "Товар не найден."
+                                    self.showingAlert = true
+                                }
+                            } catch {
+                                self.alertMessage = "❌ Ошибка декодирования: \(error.localizedDescription)"
+                                self.showingAlert = true
+                            }
+                        } else {
+                            self.alertMessage = "Не удалось преобразовать данные."
+                            self.showingAlert = true
+                        }
+                        
+                        if self.showingAlert { return }
                         self.navigateToProductDetail(productString: jsonString)
                         
                     } else if httpResponse.statusCode == 401 {
