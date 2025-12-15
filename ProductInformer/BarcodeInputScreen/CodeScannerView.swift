@@ -9,6 +9,7 @@ struct CodeScannerView: UIViewControllerRepresentable {
     
     // Стандартный обработчик результатов для сканера: Success (String) или Failure (Error)
     typealias ResultHandler = (Result<String, ScannerError>) -> Void
+    typealias UIViewControllerType = UIViewController
     var completion: ResultHandler
     
     // Определение типа ошибок
@@ -30,13 +31,18 @@ struct CodeScannerView: UIViewControllerRepresentable {
     
     // MARK: UIViewControllerRepresentable methods
     
-    func makeUIViewController(context: Context) -> ScannerViewController {
+    func makeUIViewController(context: Context) -> UIViewController {
+        #if targetEnvironment(simulator)
+        return FakeScannerViewController(completion: completion)
+        #else
         let viewController = ScannerViewController()
         viewController.delegate = context.coordinator // Назначаем координатора делегатом
         return viewController
+        #endif
+        
     }
 
-    func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
         // Обновление не требуется.
     }
     
@@ -279,3 +285,40 @@ class ScannerViewController: UIViewController {
         delegate?.scannerDidFail(error: .simulatedError)
     }
 }
+
+class FakeScannerViewController: UIViewController {
+
+    var completion: CodeScannerView.ResultHandler
+
+    init(completion: @escaping CodeScannerView.ResultHandler) {
+        self.completion = completion
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) не поддерживается") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .black
+        
+        let label = UILabel()
+        label.text = "Симулятор камеры\nНажмите для тестового сканирования"
+        label.textColor = .white
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        
+        label.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+
+        // Автоматическая подача тестового штрихкода
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.completion(.success("1234567890123"))
+        }
+    }
+}
+
