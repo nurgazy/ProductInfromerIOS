@@ -5,5 +5,10 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Камера используется для сканирования штрих-кодов, чтобы показать информацию о товаре. Изображения не сохраняются.
 </string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
