@@ -56,7 +56,7 @@ final class SettingsViewModel: ObservableObject {
         self.protocolSelection = defaults.string(forKey: SettingKeys.protocolSelection) ?? "HTTPS"
         
         // 2. Адрес сервера (String)
-        self.serverAddress = defaults.string(forKey: SettingKeys.serverAddress) ?? ""
+        self.serverAddress = defaults.string(forKey: SettingKeys.serverAddress) ?? "teri.service.kg"
         
         // 3. Порт (Int - загружаем как Int, предоставляя дефолт 80)
         // .integer(forKey:) возвращает 0, если ключ не найден, поэтому нужна проверка
@@ -64,11 +64,11 @@ final class SettingsViewModel: ObservableObject {
         self.port = savedPort > 0 ? savedPort : 443
         
         // 4. Имя публикации (String)
-        self.publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? ""
+        self.publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? "Tes"
         
         // 5. Имя пользователя (String)
-        self.username = defaults.string(forKey: SettingKeys.username) ?? ""
-        self.password = KeychainWrapper.standard.string(forKey: SettingKeys.password) ?? ""
+        self.username = defaults.string(forKey: SettingKeys.username) ?? "администратор"
+        self.password = KeychainWrapper.standard.string(forKey: SettingKeys.password) ?? "1"
         
         self.isFullSpecific = defaults.bool(forKey: SettingKeys.isFullSpecific)
     }
