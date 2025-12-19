@@ -11,5 +11,7 @@
 	<array>
 		<integer>1</integer>
 	</array>
+    <key>UIRequiresFullScreen</key>
+    <true/>
 </dict>
 </plist>
