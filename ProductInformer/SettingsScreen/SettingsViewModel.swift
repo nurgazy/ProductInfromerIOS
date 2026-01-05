@@ -64,7 +64,7 @@ final class SettingsViewModel: ObservableObject {
         self.port = savedPort > 0 ? savedPort : 443
         
         // 4. Имя публикации (String)
-        self.publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? "Tes"
+        self.publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? "Test"
         
         // 5. Имя пользователя (String)
         self.username = defaults.string(forKey: SettingKeys.username) ?? "администратор"
