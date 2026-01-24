@@ -81,12 +81,10 @@ struct CodeScannerView: UIViewControllerRepresentable {
                 guard let readableObject = metadataObject as? AVMetadataMachineReadableCodeObject else { return }
                 guard let stringValue = readableObject.stringValue else { return }
                 
-                // Проверяем, что это штрихкод (EAN-13, QR, etc.)
-                if readableObject.type == .ean13 || readableObject.type == .qr {
-                    // Успешное сканирование
-                    didScan = true
-                    // Отправляем результат обратно в SwiftUI
-                    completion(.success(stringValue))
+                didScan = true
+                
+                DispatchQueue.main.async {
+                    self.completion(.success(stringValue))
                 }
             }
         }
@@ -118,10 +116,19 @@ class ScannerViewController: UIViewController {
         addDismissButton()
     }
     
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        previewLayer?.frame = view.bounds
+    }
+    
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
-        // Обеспечиваем, что previewLayer заполняет весь экран при изменении ориентации
         previewLayer?.frame = view.layer.bounds
+        
+        // Добавьте этот блок для корректной ориентации на iPad
+        if let connection = previewLayer?.connection, connection.isVideoOrientationSupported {
+            connection.videoOrientation = .portrait
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -203,7 +210,7 @@ class ScannerViewController: UIViewController {
         // Настраиваем вывод для обработки метаданных
         metadataOutput.setMetadataObjectsDelegate(delegate as? AVCaptureMetadataOutputObjectsDelegate, queue: DispatchQueue.main)
         // Указываем, какие типы штрихкодов мы ищем (EAN-13 и QR как основные)
-        metadataOutput.metadataObjectTypes = [.ean13, .code128, .ean8]
+        metadataOutput.metadataObjectTypes = [.ean13, .ean8, .code128, .qr, .code39]
         
         // Настройка слоя предпросмотра
         previewLayer = AVCaptureVideoPreviewLayer(session: captureSession!)

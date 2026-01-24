@@ -62,18 +62,23 @@ final class BarcodeInputViewModel: ObservableObject {
     
     // Логика, которая запускается при успешном сканировании
     func handleScanResult(result: Result<String, CodeScannerView.ScannerError>) {
-        isScanning = false // Закрываем модальное окно сканера
-        switch result {
-        case .success(let code):
-            self.barcode = code
-            // После успешного сканирования сразу запускаем поиск продукта
-            findProduct()
-        case .failure(let error):
-            if error == .simulatedError {
-                return
+        DispatchQueue.main.async{
+            self.isScanning = false // Закрываем модальное окно сканера
+            
+            switch result {
+            case .success(let code):
+                self.barcode = code
+                // После успешного сканирования сразу запускаем поиск продукта
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.findProduct()
+                }
+            case .failure(let error):
+                if error == .simulatedError {
+                    return
+                }
+                self.alertMessage = "Сканирование: \(error.localizedDescription)"
+                self.showingAlert = true
             }
-            self.alertMessage = "Сканирование: \(error.localizedDescription)"
-            self.showingAlert = true
         }
     }
     
