@@ -92,7 +92,7 @@ final class BarcodeInputViewModel: ObservableObject {
         }
         
         guard let url = buildSearchURL(barcode: barcode) else {
-            self.alertMessage =  "❌ Ошибка: Невозможно построить корректный URL."
+            self.alertMessage =  "❌ Невозможно построить корректный URL."
             self.showingAlert = true
             return
         }
