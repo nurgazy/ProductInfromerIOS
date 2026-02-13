@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
-import SwiftKeychainWrapper
+import KeychainAccess
 
 struct ConnectionSettings {
     let protocolSelection: String
@@ -36,6 +36,7 @@ final class BarcodeInputViewModel: ObservableObject {
     
     private static func loadConnectionSettings() -> ConnectionSettings {
         let defaults = UserDefaults.standard
+        let keychain = Keychain(service: Bundle.main.bundleIdentifier ?? "com.productinformer.keys")
         
         let protocolSelection = defaults.string(forKey: SettingKeys.protocolSelection) ?? "HTTPS"
         let serverAddress = defaults.string(forKey: SettingKeys.serverAddress) ?? ""
@@ -43,10 +44,7 @@ final class BarcodeInputViewModel: ObservableObject {
         let port = savedPort > 0 ? savedPort : 443
         let publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? ""
         let username = defaults.string(forKey: SettingKeys.username) ?? ""
-        
-        // 🔑 Загрузка пароля из Keychain
-        let password = KeychainWrapper.standard.string(forKey: SettingKeys.password) ?? ""
-        
+        let password = keychain[SettingKeys.password] ?? ""
         let isFullSpecific = defaults.bool(forKey: SettingKeys.isFullSpecific)
         
         return ConnectionSettings(

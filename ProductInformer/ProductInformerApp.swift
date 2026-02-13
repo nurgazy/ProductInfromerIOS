@@ -9,6 +9,10 @@ import SwiftUI
 
 @main
 struct ProductInformerApp: App {
+    init() {
+        _ = AppDatabase.shared
+    }
+    
     var body: some Scene {
         WindowGroup {
             AppCoordinatorView()

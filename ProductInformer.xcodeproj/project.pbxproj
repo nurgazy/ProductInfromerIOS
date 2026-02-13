@@ -7,7 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FC4DBFF92E9C010C00FBC20A /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = FC4DBFF82E9C010C00FBC20A /* SwiftKeychainWrapper */; };
+		FCEBE6952F3F6102009E161D /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = FCEBE6942F3F6102009E161D /* GRDB */; };
+		FCEBE6AE2F3FA15B009E161D /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = FCEBE6AD2F3FA15B009E161D /* KeychainAccess */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,7 +41,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FC4DBFF92E9C010C00FBC20A /* SwiftKeychainWrapper in Frameworks */,
+				FCEBE6AE2F3FA15B009E161D /* KeychainAccess in Frameworks */,
+				FCEBE6952F3F6102009E161D /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,7 +85,8 @@
 			);
 			name = ProductInformer;
 			packageProductDependencies = (
-				FC4DBFF82E9C010C00FBC20A /* SwiftKeychainWrapper */,
+				FCEBE6942F3F6102009E161D /* GRDB */,
+				FCEBE6AD2F3FA15B009E161D /* KeychainAccess */,
 			);
 			productName = ProductInformer;
 			productReference = FC4DBFD32E9932FC00FBC20A /* ProductInformer.app */;
@@ -114,7 +117,8 @@
 			mainGroup = FC4DBFCA2E9932FC00FBC20A;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				FC4DBFF72E9C010C00FBC20A /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */,
+				FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB" */,
+				FCEBE6AC2F3FA15B009E161D /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FC4DBFD42E9932FC00FBC20A /* Products */;
@@ -364,21 +368,34 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		FC4DBFF72E9C010C00FBC20A /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */ = {
+		FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/jrendel/SwiftKeychainWrapper";
+			repositoryURL = "https://github.com/groue/GRDB.swift";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 4.0.1;
+				minimumVersion = 6.0.0;
+			};
+		};
+		FCEBE6AC2F3FA15B009E161D /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.2.2;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		FC4DBFF82E9C010C00FBC20A /* SwiftKeychainWrapper */ = {
+		FCEBE6942F3F6102009E161D /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = FC4DBFF72E9C010C00FBC20A /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
-			productName = SwiftKeychainWrapper;
+			package = FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB" */;
+			productName = GRDB;
+		};
+		FCEBE6AD2F3FA15B009E161D /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FCEBE6AC2F3FA15B009E161D /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -1,6 +1,6 @@
 import Foundation
 import SwiftUI
-import SwiftKeychainWrapper
+import KeychainAccess
 
 struct SettingKeys {
     static let protocolSelection = "protocolSelectionKey"
@@ -40,6 +40,8 @@ final class SettingsViewModel: ObservableObject {
     
     let protocols = ["HTTP", "HTTPS"]
     
+    private let keychain = Keychain(service: Bundle.main.bundleIdentifier ?? "ProductInformer.settings")
+    
     private var coordinatorPath: Binding<NavigationPath?>
     @Binding private var currentRoot: String
     
@@ -56,7 +58,7 @@ final class SettingsViewModel: ObservableObject {
         self.protocolSelection = defaults.string(forKey: SettingKeys.protocolSelection) ?? "HTTPS"
         
         // 2. Адрес сервера (String)
-        self.serverAddress = defaults.string(forKey: SettingKeys.serverAddress) ?? "teri.service.kg"
+        self.serverAddress = defaults.string(forKey: SettingKeys.serverAddress) ?? ""
         
         // 3. Порт (Int - загружаем как Int, предоставляя дефолт 80)
         // .integer(forKey:) возвращает 0, если ключ не найден, поэтому нужна проверка
@@ -64,11 +66,11 @@ final class SettingsViewModel: ObservableObject {
         self.port = savedPort > 0 ? savedPort : 443
         
         // 4. Имя публикации (String)
-        self.publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? "Test"
+        self.publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? ""
         
         // 5. Имя пользователя (String)
-        self.username = defaults.string(forKey: SettingKeys.username) ?? "администратор"
-        self.password = KeychainWrapper.standard.string(forKey: SettingKeys.password) ?? "1"
+        self.username = defaults.string(forKey: SettingKeys.username) ?? ""
+        self.password = keychain[SettingKeys.password] ?? ""
         
         self.isFullSpecific = defaults.bool(forKey: SettingKeys.isFullSpecific)
     }
@@ -104,11 +106,9 @@ final class SettingsViewModel: ObservableObject {
         defaults.set(self.publicationName, forKey: SettingKeys.publicationName)
         defaults.set(self.username, forKey: SettingKeys.username)
         if self.password.isEmpty {
-            // Если пароль пуст, удаляем старый из Keychain
-            KeychainWrapper.standard.removeObject(forKey: SettingKeys.password)
+            try? keychain.remove(SettingKeys.password)
         } else {
-            // Сохраняем пароль. Результат (Bool) можно проверить, но обычно это не требуется.
-            let _ = KeychainWrapper.standard.set(self.password, forKey: SettingKeys.password)
+            keychain[SettingKeys.password] = self.password
         }
         
         defaults.set(self.isFullSpecific, forKey: SettingKeys.isFullSpecific)
