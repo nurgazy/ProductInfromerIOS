@@ -11,7 +11,6 @@ struct BarcodeInputView: View {
     }
     
     var body: some View {
-        
         VStack {
             
             Spacer()
@@ -27,7 +26,7 @@ struct BarcodeInputView: View {
                     .padding(.horizontal)
                 
                 HStack(spacing: 15) {
-
+                
                     Button {
                         viewModel.isScanning = true
                     } label: {
@@ -61,6 +60,15 @@ struct BarcodeInputView: View {
             .padding(.bottom, 40)
         }
         .padding(.top, 30)
+        // Скрытый NavigationLink для iOS 15- (используется, когда coordinatorPath = nil)
+        .background(
+            NavigationLink(
+                destination: ProductDetailView(productString: viewModel.productDetailJSONString ?? ""),
+                isActive: $viewModel.isActiveLink,
+                label: { EmptyView() }
+            )
+            .hidden()
+        )
         
         .sheet(isPresented: $viewModel.isScanning) {
             CodeScannerView { result in

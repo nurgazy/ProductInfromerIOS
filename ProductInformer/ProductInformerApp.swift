@@ -9,6 +9,7 @@ import SwiftUI
 
 @main
 struct ProductInformerApp: App {
+    
     init() {
         _ = AppDatabase.shared
     }

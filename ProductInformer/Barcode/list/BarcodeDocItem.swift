@@ -3,7 +3,6 @@ import SwiftUI
 struct BarcodeDocItem: View {
     let document: BarcodeDoc
     let onEditClick: () -> Void
-    let onDeleteClick: () -> Void
 
     // Форматирование даты
     private var formattedDate: String {
@@ -42,11 +41,6 @@ struct BarcodeDocItem: View {
                         .foregroundColor(.blue)
                 }
                 .padding(.trailing, 8)
-
-                Button(action: onDeleteClick) {
-                    Image(systemName: "trash")
-                        .foregroundColor(.red)
-                }
             }
         }
         .padding()

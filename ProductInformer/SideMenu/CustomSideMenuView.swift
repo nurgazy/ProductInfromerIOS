@@ -70,7 +70,7 @@ struct MenuLink: View {
         Button {
             menuState.toggleMenu()
 
-            let target = AppNavigationTarget(destinationID: targetID, productString: "")
+            _ = AppNavigationTarget(destinationID: targetID, productString: "")
             if #available(iOS 16.0, *) {
                 if targetID == "settings" || targetID == "barcodeInput" {
                     currentRoot = targetID // 'settings'

@@ -1,45 +1,55 @@
 import SwiftUI
 
 struct BarcodeListScreen: View {
-    @StateObject private var viewModel = BarcodeListViewModel()
+    @Binding var coordinatorPath: NavigationPath?
+    @StateObject private var viewModel: BarcodeListViewModel
+    
+    @State private var selectedDocId: Int64?
+    @State private var navigateToDetail = false
+    
+    init(coordinatorPath: Binding<NavigationPath?>) {
+        self._coordinatorPath = coordinatorPath
+        self._viewModel = StateObject(wrappedValue: BarcodeListViewModel(coordinatorPath: coordinatorPath))
+    }
     
     var body: some View {
-        NavigationView {
-            VStack {
-                List {
-                    ForEach(viewModel.barcodeDocs, id: \.barcodeDocId) { doc in
-                        BarcodeDocItem(
-                            document: doc,
-                            onEditClick: {
-                                // Логика перехода на редактирование
-                                print("Edit: \(doc.barcodeDocId ?? 0)")
-                            },
-                            onDeleteClick: {
-                                viewModel.onDeleteDoc(doc)
-                            }
-                        )
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets())
+        VStack {
+            
+            List {
+                ForEach(viewModel.barcodeDocs, id: \.barcodeDocId) { doc in
+                    BarcodeDocItem(
+                        document: doc,
+                        onEditClick: {
+                            let target = AppNavigationTarget(
+                                destinationID: "barcodeDetail",
+                                productString: String(doc.barcodeDocId ?? 0)
+                            )
+                            coordinatorPath?.append(AppNavigation.view(target))
+                        }
+                    )
+                    .buttonStyle(BorderlessButtonStyle())
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets())
+                }
+                .onDelete { indexSet in
+                    indexSet.map { viewModel.barcodeDocs[$0] }.forEach { doc in
+                        viewModel.onDeleteDoc(doc)
                     }
                 }
-                .listStyle(.plain)
-                
-                Button(action: {
-                    // Логика добавления нового документа
-                }) {
-                    Text("Добавить")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
-                .padding()
             }
-            .navigationTitle("Список штрихкодов")
-            .onAppear {
-                viewModel.refreshBarcodeDocList()
+            .listStyle(.plain)
+            
+            Button(action: viewModel.addNewDocument)
+            {
+                Text("Добавить")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
             }
+            .padding()
         }
+        .navigationTitle("Список документов")
     }
 }

@@ -7,9 +7,10 @@ struct AppNavigationTarget: Hashable, Equatable {
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(destinationID)
+        hasher.combine(productString)
     }
     
     static func == (lhs: AppNavigationTarget, rhs: AppNavigationTarget) -> Bool {
-        return lhs.destinationID == rhs.destinationID
+        return lhs.destinationID == rhs.destinationID && lhs.productString == rhs.productString
     }
 }

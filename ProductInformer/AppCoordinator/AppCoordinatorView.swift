@@ -21,10 +21,9 @@ struct AppCoordinatorView: View {
                     
                     Group {
                         if coordinator.currentRoot == "barcodeInput" {
-                            BarcodeInputView(coordinatorPath: $coordinator.navigationPath.optionalized)
+                            MainTabView(coordinatorPath: $coordinator.navigationPath.optionalized)
                         }
                         else if coordinator.currentRoot == "settings" {
-                            // SettingsView без возможности "Назад"
                             SettingsView(coordinatorPath: $coordinator.navigationPath.optionalized,
                                          currentRoot: $coordinator.currentRoot)
                         }
@@ -55,6 +54,20 @@ struct AppCoordinatorView: View {
                             else if target.destinationID == "productDetail"
                             {
                                 ProductDetailView(productString: target.productString)
+                            }
+                            else if target.destinationID == "barcodeList" {
+                                BarcodeListScreen(coordinatorPath: $coordinator.navigationPath.optionalized)
+                            }
+                            else if target.destinationID == "barcodeDetail" {
+                                // Преобразуем строку ID в число. "0" трактуем как новый документ (nil)
+                                let rawId = Int64(target.productString) ?? 0
+                                let docId: Int64? = (rawId == 0) ? nil : rawId
+                                
+                                // Передаем путь навигации и ID документа
+                                BarcodeDetailScreen(
+                                    barcodeDocId: docId,
+                                    coordinatorPath: $coordinator.navigationPath.optionalized
+                                )
                             }
                         }
                     }

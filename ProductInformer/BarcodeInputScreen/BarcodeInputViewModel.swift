@@ -17,6 +17,7 @@ final class BarcodeInputViewModel: ObservableObject {
     
     @Published var isSearching: Bool = false
     @Published var isActiveLink: Bool = false      // Для iOS 15-
+    @Published var productDetailJSONString: String? = nil  // Данные для экрана деталей (iOS 15-)
     
     @Published var barcode: String = ""
     @Published var isScanning: Bool = false
@@ -201,14 +202,19 @@ final class BarcodeInputViewModel: ObservableObject {
     }
     
     private func navigateToProductDetail(productString: String) {
-        
-        if #available(iOS 16.0, *) {
-            // Use NavigationPath for iOS 16+
-            let target = AppNavigationTarget(destinationID: "productDetail", productString: productString)
-            coordinatorPath.wrappedValue?.append(AppNavigation.view(target))
-        } else {
-            // Use NavigationLink's isActive binding for iOS 15-
-            isActiveLink = true
+        Task { @MainActor in
+            // Сохраняем JSON, чтобы использовать его в NavigationLink для iOS 15-
+            self.productDetailJSONString = productString
+            
+            if #available(iOS 16.0, *) {
+                if coordinatorPath.wrappedValue != nil{
+                    let target = AppNavigationTarget(destinationID: "productDetail", productString: productString)
+                    coordinatorPath.wrappedValue?.append(AppNavigation.view(target))
+                }
+            } else {
+                // Use NavigationLink's isActive binding for iOS 15-
+                isActiveLink = true
+            }
         }
     }
 }
