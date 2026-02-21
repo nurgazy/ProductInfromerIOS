@@ -26,9 +26,8 @@ class BarcodeDetailVM: ObservableObject {
         
         if self.barcodeDocId != nil {
             loadData()
-        } else {
-            saveDoc()
         }
+        
     }
 
     func loadData() {

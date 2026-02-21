@@ -36,8 +36,6 @@ struct BarcodeDetailScreen: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(.blue)
-                        // Скрываем, если документ уже существует (логика из Котлин)
-                        .opacity(viewModel.curBarcodeDoc == nil ? 1 : 0)
                         
                         Button(action: { viewModel.showScanner = true }) {
                             Label("Сканер", systemImage: "barcode.viewfinder")
