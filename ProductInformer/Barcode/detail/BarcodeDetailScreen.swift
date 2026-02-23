@@ -42,6 +42,13 @@ struct BarcodeDetailScreen: View {
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)
+//                        Button(action: {
+//                            viewModel.findProduct(barcode: "2000000512518")
+//                        }) {
+//                            Label("Сканер", systemImage: "barcode.viewfinder")
+//                                .frame(maxWidth: .infinity)
+//                        }
+//                        .buttonStyle(.bordered)
                     }
                     
                     Button(action: { viewModel.uploadTo1C() }) {
@@ -67,14 +74,20 @@ struct BarcodeDetailScreen: View {
                 )
             }
         }
-        .navigationTitle("Документ №\(viewModel.curBarcodeDoc?.barcodeDocId ?? 0)")
-        .alert("Статус выгрузки", isPresented: Binding(
-            get: { viewModel.uploadStatusMessage != nil },
-            set: { _ in viewModel.uploadStatusMessage = nil }
-        )) {
-            Button("ОК", role: .cancel) { }
-        } message: {
-            Text(viewModel.uploadStatusMessage ?? "")
+        .sheet(isPresented: $viewModel.showScanner) {
+            CodeScannerView { result in
+                viewModel.handleScanResult(result: result)
+            }
+            .onDisappear {
+                viewModel.showScanner = false
+            }
+            .ignoresSafeArea()
         }
+        .alert("Ошибка поиска продукта", isPresented: $viewModel.showingAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.alertMessage)
+        }
+        .navigationTitle("Документ №\(viewModel.curBarcodeDoc?.barcodeDocId ?? 0)")
     }
 }

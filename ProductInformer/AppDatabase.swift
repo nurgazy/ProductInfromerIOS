@@ -15,13 +15,6 @@ class AppDatabase {
         
         // 2. Инициализируем очередь (если файла нет, он будет создан)
         self.dbQueue = try DatabaseQueue(path: dbURL.path)
-        #if targetEnvironment(simulator)
-        // Печатаем команду, которую можно просто скопировать и вставить в Терминал
-        print("--- DATABASE DEBUG ---")
-        print("Копируйте эту строку в Терминал:")
-        print("open -a 'DBeaver' \"\(dbURL.path)\"")
-        print("-----------------------")
-        #endif
         
         // 3. Запускаем миграции (создание таблиц)
         try migrator.migrate(dbQueue)
@@ -31,7 +24,7 @@ class AppDatabase {
     private var migrator: DatabaseMigrator {
         var migrator = DatabaseMigrator()
         
-        migrator.registerMigration("v1_create_users") { db in
+        migrator.registerMigration("v1_create_barcodes") { db in
             // Создание таблицы, если она не существует
             try db.create(table: "barcode") { t in
                 t.autoIncrementedPrimaryKey("barcodeDocId") //

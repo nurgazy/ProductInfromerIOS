@@ -2,20 +2,26 @@ import Foundation
 import SwiftUI
 import Combine
 import GRDB
+import KeychainAccess
 
 @MainActor
 class BarcodeDetailVM: ObservableObject {
     @Published var barcodeList: [BarcodeDocDetail] = []
     @Published var curBarcodeDoc: BarcodeDoc?
+    @Published var curBarcodeDocDetail: BarcodeDocDetail?
     @Published var showQuantityDialog = false
-    @Published var uploadStatusMessage: String?
     @Published var showScanner = false
     @Published var isUploading = false
+    @Published var alertMessage: String = ""
+    @Published var showingAlert: Bool = false
+    @Published var isSearching: Bool = false
     
     private let dbQueue: DatabaseQueue = AppDatabase.shared.dbQueue
     private var cancellables = Set<AnyCancellable>()
     private var barcodeDocId: Int64?
     private var coordinatorPath: Binding<NavigationPath?>
+
+    private var connectionSettings: ConnectionSettings
     
     // Временные данные для диалога
     var lastScannedBarcode: String = ""
@@ -23,11 +29,35 @@ class BarcodeDetailVM: ObservableObject {
     init(barcodeDocId: Int64?, coordinatorPath: Binding<NavigationPath?>) {
         self.coordinatorPath = coordinatorPath
         self.barcodeDocId = (barcodeDocId == 0) ? nil : barcodeDocId
-        
+        self.connectionSettings = BarcodeDetailVM.loadConnectionSettings()
         if self.barcodeDocId != nil {
             loadData()
         }
         
+    }
+    
+    private static func loadConnectionSettings() -> ConnectionSettings {
+        let defaults = UserDefaults.standard
+        let keychain = Keychain(service: Bundle.main.bundleIdentifier ?? "com.productinformer.keys")
+        
+        let protocolSelection = defaults.string(forKey: SettingKeys.protocolSelection) ?? "HTTPS"
+        let serverAddress = defaults.string(forKey: SettingKeys.serverAddress) ?? ""
+        let savedPort = defaults.integer(forKey: SettingKeys.port)
+        let port = savedPort > 0 ? savedPort : 443
+        let publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? ""
+        let username = defaults.string(forKey: SettingKeys.username) ?? ""
+        let password = keychain[SettingKeys.password] ?? ""
+        let isFullSpecific = defaults.bool(forKey: SettingKeys.isFullSpecific)
+        
+        return ConnectionSettings(
+            protocolSelection: protocolSelection,
+            serverAddress: serverAddress,
+            port: port,
+            publicationName: publicationName,
+            username: username,
+            password: password,
+            isFullSpecific: isFullSpecific
+        )
     }
 
     func loadData() {
@@ -47,34 +77,225 @@ class BarcodeDetailVM: ObservableObject {
     }
 
     func saveDoc() {
-        guard barcodeDocId == nil else { return }
-        var newDoc = BarcodeDoc(barcodeDocId: nil, status: "ACTIVE", uuid1C: UUID().uuidString, creationTimestamp: Date())
-        try? dbQueue.write { db in
-            try newDoc.insert(db)
-            self.barcodeDocId = newDoc.barcodeDocId
-            loadData()
+        do {
+            try dbQueue.write { db in
+                var currentID: Int64
+
+                if let existingId = self.barcodeDocId {
+                    currentID = existingId
+                    // Опционально: можно обновить дату изменения документа здесь
+                } else {
+                    let newDoc = BarcodeDoc(
+                        barcodeDocId: nil,
+                        status: "ACTIVE",
+                        uuid1C: "",
+                        creationTimestamp: Date()
+                    )
+                    
+                    if let savedDoc = try newDoc.insertAndFetch(db) {
+                        guard let id = savedDoc.barcodeDocId else {
+                            throw DatabaseError.idGenerationFailed
+                        }
+                        currentID = id
+                    } else {
+                        throw DatabaseError.idGenerationFailed
+                    }
+                }
+
+                try BarcodeDocDetail.filter(Column("barcodeDocId") == currentID).deleteAll(db)
+
+                for var item in barcodeList {
+                    item.barcodeDocId = currentID
+                    item.barcodeDetailId = nil
+                    try item.insert(db)
+                }
+
+                // 3. Обновляем UI в главном потоке
+                Task { @MainActor in
+                    self.barcodeDocId = currentID
+                    self.loadData()
+                }
+            }
+        } catch {
+            print("❌ Ошибка сохранения: \(error)")
+            Task { @MainActor in
+                self.alertMessage = "Ошибка БД: \(error.localizedDescription)"
+                self.showingAlert = true
+            }
         }
     }
 
     func deleteItem(_ item: BarcodeDocDetail) {
-        try? dbQueue.write { db in
-            _ = try item.delete(db)
-        }
+        barcodeList.removeAll { $0.barcode == item.barcode && $0.barcodeDetailId == item.barcodeDetailId }
     }
 
     func uploadTo1C() {
-        guard let doc = curBarcodeDoc, !barcodeList.isEmpty else { return }
+//        guard let doc = curBarcodeDoc, !barcodeList.isEmpty else { return }
         isUploading = true
     }
     
-    func handleScanResult(barcode: String) {
-        self.lastScannedBarcode = barcode
-        self.showScanner = false
-        self.showQuantityDialog = true
+    func handleScanResult(result: Result<String, CodeScannerView.ScannerError>) {
+        DispatchQueue.main.async{
+            self.showScanner = false
+            
+            switch result {
+            case .success(let code):
+                self.lastScannedBarcode = code
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.findProduct(barcode: code)
+                }
+            case .failure(let error):
+                if error == .simulatedError {
+                    return
+                }
+                self.alertMessage = "Сканирование: \(error.localizedDescription)"
+                self.showingAlert = true
+            }
+        }
+    }
+    
+    func findProduct(barcode: String) {
+        guard !barcode.isEmpty else {
+            self.alertMessage =  "❌ Введите или отсканируйте штрихкод."
+            self.showingAlert = true
+            return
+        }
+        
+        guard let url = buildSearchURL(barcode: barcode) else {
+            self.alertMessage =  "❌ Невозможно построить корректный URL."
+            self.showingAlert = true
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        let authString = "\(connectionSettings.username):\(connectionSettings.password)"
+        if let data = authString.data(using: .utf8) {
+            let base64Auth = data.base64EncodedString()
+            request.setValue("Basic \(base64Auth)", forHTTPHeaderField: "Authorization")
+        }
+
+        Task {
+            await MainActor.run {
+                self.isSearching = true
+                self.showingAlert = false
+                self.alertMessage = ""
+            }
+            
+            defer {
+                Task { @MainActor in self.isSearching = false } // 🟢 END LOADING
+            }
+            
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw URLError(.badServerResponse)
+                }
+                
+                guard let jsonString = String(data: data, encoding: .utf8) else {
+                    await MainActor.run {
+                        self.alertMessage = "❌ Ошибка: Не удалось прочитать ответ сервера как тек."
+                        self.showingAlert = true
+                    }
+                    return
+                }
+                
+                await MainActor.run {
+                    if httpResponse.statusCode == 200 {
+                        
+                        if let jsonData = jsonString.data(using: .utf8) {
+                            do {
+                                let decoder = JSONDecoder()
+                                let productResponse = try decoder.decode(ProductResponse.self, from: jsonData)
+                                if !productResponse.result{
+                                    self.alertMessage = "Товар не найден."
+                                    self.showingAlert = true
+                                }else{
+                                    self.curBarcodeDocDetail = self.getBarcodeDocDetail(productData: productResponse)
+                                    self.showQuantityDialog = true
+                                }
+                            } catch {
+                                self.alertMessage = "❌ Ошибка декодирования: \(error.localizedDescription)"
+                                self.showingAlert = true
+                            }
+                        } else {
+                            self.alertMessage = "Не удалось преобразовать данные."
+                            self.showingAlert = true
+                        }
+                        
+                        if self.showingAlert { return }
+                        
+                    } else if httpResponse.statusCode == 401 {
+                        self.alertMessage = "❌ Ошибка 401: Неверный пользователь/пароль. Проверьте настройки подключения."
+                        self.showingAlert = true
+                    } else {
+                        self.alertMessage = "⚠️ Ошибка сервера: Код \(httpResponse.statusCode). Ответ: \(jsonString.prefix(100))..."
+                        self.showingAlert = true
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.alertMessage = "❌ Не удалось подключиться к \(self.connectionSettings.serverAddress). Причина: \(error.localizedDescription)"
+                    self.showingAlert = true
+                }
+            }
+        }
+    }
+    
+    private func buildSearchURL(barcode: String) -> URL? {
+        // Базовый путь остается прежним
+        let basePath = "/hs/ProductInformation/Info"
+        
+        var components = URLComponents()
+        components.scheme = connectionSettings.protocolSelection.lowercased()
+        components.host = connectionSettings.serverAddress
+        components.port = connectionSettings.port
+        components.path = "/\(connectionSettings.publicationName)\(basePath)"
+        
+        var queryItems = [
+            URLQueryItem(name: "barcode", value: barcode)
+        ]
+        queryItems.append(
+            URLQueryItem(name: "full", value: "false")
+        )
+
+        components.queryItems = queryItems
+
+        return components.url
     }
     
     func addProductWithQuantity(_ qty: Int) {
-        // Логика добавления товара в базу (аналог vm.addToBarcodeList(quantity))
+        guard var itemToSave = curBarcodeDocDetail else { return }
+
+        itemToSave.quantity = qty
+        
+        self.barcodeList.append(itemToSave)
+        self.curBarcodeDocDetail = nil
         self.showQuantityDialog = false
     }
+    
+    private func getBarcodeDocDetail(productData: ProductResponse?) -> BarcodeDocDetail? {
+        guard let product = productData else { return nil }
+        
+        let firstChar = product.characteristics?.first
+        let nomenclature = product.nomenclature
+        let barcodeDocDetail = BarcodeDocDetail(
+            barcodeDetailId: nil,
+            barcode: nomenclature.barcode,
+            productName: nomenclature.name,
+            productSpecName: firstChar?.name ?? "",
+            productUuid1C: nomenclature.uuid1с,
+            productSpecUuid1C: firstChar?.uuid1C ?? "",
+            barcodeDocId: self.barcodeDocId ?? 0,
+            quantity: 1
+        )
+        
+        return barcodeDocDetail
+    }
+    
+}
+
+enum DatabaseError: Error {
+    case idGenerationFailed
 }
