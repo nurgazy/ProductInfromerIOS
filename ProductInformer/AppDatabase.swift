@@ -26,7 +26,7 @@ class AppDatabase {
         
         migrator.registerMigration("v1_create_barcodes") { db in
             // Создание таблицы, если она не существует
-            try db.create(table: "barcode") { t in
+            try db.create(table: "barcode", ifNotExists: true) { t in
                 t.autoIncrementedPrimaryKey("barcodeDocId") //
                 t.column("status", .text).notNull() //
                 t.column("uuid1C", .text).notNull() //
@@ -34,7 +34,7 @@ class AppDatabase {
             }
             
             // Создание таблицы barcodeDetails
-            try db.create(table: "barcodeDetails") { t in
+            try db.create(table: "barcodeDetails", ifNotExists: true) { t in
                 t.autoIncrementedPrimaryKey("barcodeDetailId") //
                 t.column("barcode", .text).notNull() //
                 t.column("productName", .text).notNull() //

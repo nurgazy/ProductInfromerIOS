@@ -15,11 +15,29 @@ struct QuantityInputDialog: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
-            TextField("Количество", text: $quantity)
-                .keyboardType(.numberPad)
-                .textFieldStyle(.roundedBorder)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+            // Стэк управления количеством
+            HStack(spacing: 20) {
+                // Кнопка Минус
+                Button(action: { changeQuantity(by: -1) }) {
+                    Image(systemName: "minus.circle.fill")
+                        .font(.title)
+                        .foregroundColor(.red)
+                }
+                
+                TextField("0", text: $quantity)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
+                    .multilineTextAlignment(.center)
+                    .frame(width: 80) // Ограничиваем ширину для компактности
+                
+                // Кнопка Плюс
+                Button(action: { changeQuantity(by: 1) }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title)
+                        .foregroundColor(.green)
+                }
+            }
+            .padding(.horizontal)
             
             HStack(spacing: 16) {
                 Button("Отмена", action: onDismiss)
@@ -41,5 +59,12 @@ struct QuantityInputDialog: View {
         .cornerRadius(16)
         .shadow(radius: 10)
         .frame(width: 300)
+    }
+    
+    // Вспомогательная функция для инкремента/декремента
+    private func changeQuantity(by amount: Int) {
+        let currentVal = Int(quantity) ?? 0
+        let newVal = max(1, currentVal + amount) // Не позволяем опускаться ниже 1
+        quantity = String(newVal)
     }
 }
