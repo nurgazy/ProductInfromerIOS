@@ -15,16 +15,27 @@ class BarcodeDetailVM: ObservableObject {
     @Published var alertMessage: String = ""
     @Published var showingAlert: Bool = false
     @Published var isSearching: Bool = false
+    @Published var searchText: String = ""
     
     private let dbQueue: DatabaseQueue = AppDatabase.shared.dbQueue
     private var cancellables = Set<AnyCancellable>()
     private var barcodeDocId: Int64?
     private var coordinatorPath: Binding<NavigationPath?>
-
     private var connectionSettings: ConnectionSettings
     
-    // Временные данные для диалога
     var lastScannedBarcode: String = ""
+
+    // Вычисляемое свойство для фильтрации списка
+    var filteredBarcodeList: [BarcodeDocDetail] {
+        if searchText.isEmpty {
+            return barcodeList
+        } else {
+            return barcodeList.filter { item in
+                item.productName.localizedCaseInsensitiveContains(searchText) ||
+                item.barcode.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+    }
 
     init(barcodeDocId: Int64?, coordinatorPath: Binding<NavigationPath?>) {
         self.coordinatorPath = coordinatorPath

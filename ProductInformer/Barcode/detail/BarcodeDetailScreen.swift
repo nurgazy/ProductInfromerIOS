@@ -16,8 +16,15 @@ struct BarcodeDetailScreen: View {
     var body: some View {
         ZStack {
             VStack {
+                TextField("Поиск по названию или штрихкоду", text: $viewModel.searchText)
+                    .padding(10)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+                    .padding(.top, 5)
+                
                 List {
-                    ForEach(Array(viewModel.barcodeList.enumerated()), id: \.element.barcodeDetailId) { index, item in
+                    ForEach(Array(viewModel.filteredBarcodeList.enumerated()), id: \.element.barcodeDetailId) { index, item in
                         BarcodeDetailListItem(itemNumber: index + 1, item: item) {
                             viewModel.deleteItem(item)
                         }
@@ -37,18 +44,18 @@ struct BarcodeDetailScreen: View {
                         .buttonStyle(.borderedProminent)
                         .tint(.blue)
                         
-                        Button(action: { viewModel.showScanner = true }) {
-                            Label("Сканер", systemImage: "barcode.viewfinder")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-//                        Button(action: {
-//                            viewModel.findProduct(barcode: "2000000512518")
-//                        }) {
+//                        Button(action: { viewModel.showScanner = true }) {
 //                            Label("Сканер", systemImage: "barcode.viewfinder")
 //                                .frame(maxWidth: .infinity)
 //                        }
 //                        .buttonStyle(.bordered)
+                        Button(action: {
+                            viewModel.findProduct(barcode: "2000000512518")
+                        }) {
+                            Label("Сканер", systemImage: "barcode.viewfinder")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
                     }
                     
                     Button(action: { viewModel.uploadTo1C() }) {
