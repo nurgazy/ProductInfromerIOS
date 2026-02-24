@@ -14,7 +14,6 @@ struct BarcodeListScreen: View {
     
     var body: some View {
         VStack {
-            
             List {
                 ForEach(viewModel.barcodeDocs, id: \.barcodeDocId) { doc in
                     BarcodeDocItem(
@@ -28,6 +27,7 @@ struct BarcodeListScreen: View {
                         }
                     )
                     .buttonStyle(BorderlessButtonStyle())
+                    .padding(.vertical, 4)
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets())
                 }
@@ -50,6 +50,6 @@ struct BarcodeListScreen: View {
             }
             .padding()
         }
-        .navigationTitle("Список документов")
+//        .navigationTitle("Список документов")
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct QuantityInputDialog: View {
     let barcode: String
+    let productName: String
     @Binding var quantity: String
     var onConfirm: (Int) -> Void
     var onDismiss: () -> Void
@@ -11,9 +12,17 @@ struct QuantityInputDialog: View {
             Text("Введите количество")
                 .font(.headline)
             
-            Text("Штрихкод: \(barcode)")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            VStack(spacing: 5) {
+                Text(productName) // Отображаем имя товара
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                
+                Text("Штрихкод: \(barcode)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal)
             
             // Стэк управления количеством
             HStack(spacing: 20) {

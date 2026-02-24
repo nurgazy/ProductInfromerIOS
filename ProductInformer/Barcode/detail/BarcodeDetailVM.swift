@@ -36,6 +36,10 @@ class BarcodeDetailVM: ObservableObject {
             }
         }
     }
+    
+    var isUploaded: Bool {
+        return curBarcodeDoc?.status == "UPLOADED"
+    }
 
     init(barcodeDocId: Int64?, coordinatorPath: Binding<NavigationPath?>) {
         self.coordinatorPath = coordinatorPath
@@ -139,11 +143,6 @@ class BarcodeDetailVM: ObservableObject {
     func deleteItem(_ item: BarcodeDocDetail) {
         barcodeList.removeAll { $0.barcode == item.barcode && $0.barcodeDetailId == item.barcodeDetailId }
     }
-
-    func uploadTo1C() {
-//        guard let doc = curBarcodeDoc, !barcodeList.isEmpty else { return }
-        isUploading = true
-    }
     
     func handleScanResult(result: Result<String, CodeScannerView.ScannerError>) {
         DispatchQueue.main.async{
@@ -171,6 +170,8 @@ class BarcodeDetailVM: ObservableObject {
             self.showingAlert = true
             return
         }
+        
+        self.lastScannedBarcode = barcode
         
         guard let url = buildSearchURL(barcode: barcode) else {
             self.alertMessage =  "❌ Невозможно построить корректный URL."
@@ -303,6 +304,95 @@ class BarcodeDetailVM: ObservableObject {
         )
         
         return barcodeDocDetail
+    }
+    
+    func uploadTo1C() {
+        // 1. Проверки перед отправкой
+        guard let docId = self.barcodeDocId, !barcodeList.isEmpty else {
+            self.alertMessage = "Документ не сохранен или список товаров пуст"
+            self.showingAlert = true
+            return
+        }
+
+        self.isUploading = true
+        
+        let uploadItems = barcodeList.map { item in
+            BarcodeDocumentItemUpload(
+                name: item.productName,
+                barcode: item.barcode,
+                quantity: item.quantity,
+                productUuid1C: item.productUuid1C,
+                productSpecUuid1C: item.productSpecUuid1C
+            )
+        }
+        
+        let uploadData = BarcodeDocumentUpload(
+            internalId: docId,
+            uuid1C: curBarcodeDoc?.uuid1C ?? "",
+            username: connectionSettings.username,
+            items: uploadItems
+        )
+
+        Task {
+            do {
+                // 2. Формируем URL (базовый путь из вашего VM)
+                guard let url = constructUploadURL() else { return }
+                
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                
+                let authString = "\(connectionSettings.username):\(connectionSettings.password)"
+                if let data = authString.data(using: .utf8) {
+                    let base64Auth = data.base64EncodedString()
+                    request.setValue("Basic \(base64Auth)", forHTTPHeaderField: "Authorization")
+                }
+                
+                request.httpBody = try JSONEncoder().encode(uploadData)
+
+                // 3. Отправка
+                let (_, response) = try await URLSession.shared.data(for: request)
+                
+                if let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) {
+                    // 4. Успех: Обновляем статус в локальной БД
+                    try await dbQueue.write { db in
+                        if var doc = try BarcodeDoc.fetchOne(db, key: docId) {
+                            doc.status = "UPLOADED"
+                            try doc.update(db)
+                            
+                        }
+                    }
+                    
+                    await MainActor.run {
+                        self.isUploading = false
+                        self.curBarcodeDoc?.status = "UPLOADED"
+                    }
+                    
+                } else {
+                    throw URLError(.badServerResponse)
+                }
+            } catch {
+                await MainActor.run {
+                    self.isUploading = false
+                    self.alertMessage = "Ошибка выгрузки: \(error.localizedDescription)"
+                    self.showingAlert = true
+                }
+            }
+        }
+    }
+
+    // Вспомогательный метод для URL
+    private func constructUploadURL() -> URL? {
+        
+        let basePath = "/hs/ProductInformation/Document"
+        
+        var components = URLComponents()
+        components.scheme = connectionSettings.protocolSelection.lowercased()
+        components.host = connectionSettings.serverAddress
+        components.port = connectionSettings.port
+        components.path = "/\(connectionSettings.publicationName)\(basePath)"
+
+        return components.url
     }
     
 }

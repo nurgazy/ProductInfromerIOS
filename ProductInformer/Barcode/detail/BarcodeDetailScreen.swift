@@ -59,20 +59,27 @@ struct BarcodeDetailScreen: View {
                     }
                     
                     Button(action: { viewModel.uploadTo1C() }) {
-                        Label("Выгрузить", systemImage: "arrow.up.doc")
-                            .frame(maxWidth: .infinity)
+                        if viewModel.isUploading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Label(viewModel.isUploaded ? "Выгружено" : "Выгрузить",
+                                  systemImage: viewModel.isUploaded ? "checkmark.seal.fill" : "arrow.up.doc")
+                                .frame(maxWidth: .infinity)
+                        }
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(viewModel.isUploading || viewModel.barcodeList.isEmpty)
+                    .disabled(viewModel.isUploaded || viewModel.barcodeList.isEmpty)
+                    .tint(viewModel.isUploaded ? .gray : .blue)
                 }
                 .padding()
             }
             
-            // Overlay для диалога (Аналог if (showQuantityInputDialog))
-            if viewModel.showQuantityDialog {
+            if viewModel.showQuantityDialog, let item = viewModel.curBarcodeDocDetail {
                 Color.black.opacity(0.4).ignoresSafeArea()
                 QuantityInputDialog(
                     barcode: viewModel.lastScannedBarcode,
+                    productName: item.productName,
                     quantity: $quantityText,
                     onConfirm: { qty in
                         viewModel.addProductWithQuantity(qty)
@@ -90,7 +97,7 @@ struct BarcodeDetailScreen: View {
             }
             .ignoresSafeArea()
         }
-        .alert("Ошибка поиска продукта", isPresented: $viewModel.showingAlert) {
+        .alert("Внимание", isPresented: $viewModel.showingAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.alertMessage)

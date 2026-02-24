@@ -8,17 +8,20 @@ struct MainTabView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             BarcodeInputView(coordinatorPath: $coordinatorPath)
-                .tabItem {
-                    Label("Поиск", systemImage: "magnifyingglass")
-                }
-                .tag(0)
-
+            .tabItem {
+                Label("Поиск", systemImage: "magnifyingglass")
+            }
+            .tag(0)
+            
             BarcodeListScreen(coordinatorPath: $coordinatorPath)
-                .tabItem {
-                    Label("Сбор", systemImage: "barcode.viewfinder")
-                }
-                .tag(1)
+            .tabItem {
+                Label("Сбор", systemImage: "barcode.viewfinder")
+            }
+            .tag(1)
+            
         }
         .accentColor(.blue)
+        .navigationTitle(selectedTab == 0 ? "Ввод штрихкода" : "Список документов")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
