@@ -95,19 +95,25 @@ class BarcodeDetailVM: ObservableObject {
         do {
             try dbQueue.write { db in
                 var currentID: Int64
-
-                if let existingId = self.barcodeDocId {
-                    currentID = existingId
-                    // Опционально: можно обновить дату изменения документа здесь
+                var doc: BarcodeDoc
+                
+                if let existingDoc = self.curBarcodeDoc {
+                    doc = existingDoc
+                    doc.creationTimestamp = Date()
+                    try doc.save(db)
+                    guard let id = doc.barcodeDocId else {
+                        throw DatabaseError.idGenerationFailed
+                    }
+                    currentID = id
                 } else {
-                    let newDoc = BarcodeDoc(
+                    doc = BarcodeDoc(
                         barcodeDocId: nil,
                         status: "ACTIVE",
                         uuid1C: "",
                         creationTimestamp: Date()
                     )
                     
-                    if let savedDoc = try newDoc.insertAndFetch(db) {
+                    if let savedDoc = try doc.insertAndFetch(db) {
                         guard let id = savedDoc.barcodeDocId else {
                             throw DatabaseError.idGenerationFailed
                         }
@@ -116,6 +122,30 @@ class BarcodeDetailVM: ObservableObject {
                         throw DatabaseError.idGenerationFailed
                     }
                 }
+                
+                
+                
+
+//                if let existingId = self.barcodeDocId {
+//                    currentID = existingId
+//                    // Опционально: можно обновить дату изменения документа здесь
+//                } else {
+//                    let newDoc = BarcodeDoc(
+//                        barcodeDocId: nil,
+//                        status: "ACTIVE",
+//                        uuid1C: "",
+//                        creationTimestamp: Date()
+//                    )
+//                    
+//                    if let savedDoc = try newDoc.insertAndFetch(db) {
+//                        guard let id = savedDoc.barcodeDocId else {
+//                            throw DatabaseError.idGenerationFailed
+//                        }
+//                        currentID = id
+//                    } else {
+//                        throw DatabaseError.idGenerationFailed
+//                    }
+//                }
 
                 try BarcodeDocDetail.filter(Column("barcodeDocId") == currentID).deleteAll(db)
 
@@ -128,6 +158,7 @@ class BarcodeDetailVM: ObservableObject {
                 // 3. Обновляем UI в главном потоке
                 Task { @MainActor in
                     self.barcodeDocId = currentID
+                    self.curBarcodeDoc = doc
                     self.loadData()
                 }
             }
@@ -326,10 +357,17 @@ class BarcodeDetailVM: ObservableObject {
             )
         }
         
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss" // Формат, который 1С воспринимает идеально
+        formatter.locale = Locale(identifier: "en_US_POSIX") // Чтобы избежать проблем с 12/24 часовым форматом
+
+        let dateStringFor1C = formatter.string(from: curBarcodeDoc?.creationTimestamp ?? Date())
+        
         let uploadData = BarcodeDocumentUpload(
             internalId: docId,
             uuid1C: curBarcodeDoc?.uuid1C ?? "",
             username: connectionSettings.username,
+            docDate: dateStringFor1C,
             items: uploadItems
         )
 
