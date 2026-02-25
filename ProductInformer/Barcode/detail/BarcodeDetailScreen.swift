@@ -44,14 +44,7 @@ struct BarcodeDetailScreen: View {
                         .buttonStyle(.borderedProminent)
                         .tint(.blue)
                         
-//                        Button(action: { viewModel.showScanner = true }) {
-//                            Label("Сканер", systemImage: "barcode.viewfinder")
-//                                .frame(maxWidth: .infinity)
-//                        }
-//                        .buttonStyle(.bordered)
-                        Button(action: {
-                            viewModel.findProduct(barcode: "2000000512518")
-                        }) {
+                        Button(action: { viewModel.showScanner = true }) {
                             Label("Сканер", systemImage: "barcode.viewfinder")
                                 .frame(maxWidth: .infinity)
                         }
