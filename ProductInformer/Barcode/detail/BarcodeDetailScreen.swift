@@ -24,11 +24,11 @@ struct BarcodeDetailScreen: View {
                     .padding(.top, 5)
                 
                 List {
-                    ForEach(Array(viewModel.filteredBarcodeList.enumerated()), id: \.element.barcodeDetailId) { index, item in
-                        BarcodeDetailListItem(itemNumber: index + 1, item: item) {
-                            viewModel.deleteItem(item)
+                    ForEach(Array(viewModel.filteredBarcodeList.enumerated()), id: \.offset) { index, item in
+                            BarcodeDetailListItem(itemNumber: index + 1, item: item) {
+                                viewModel.deleteItem(item)
+                            }
                         }
-                    }
                 }
                 .listStyle(.plain)
                 

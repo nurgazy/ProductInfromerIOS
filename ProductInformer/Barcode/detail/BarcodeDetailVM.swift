@@ -122,30 +122,6 @@ class BarcodeDetailVM: ObservableObject {
                         throw DatabaseError.idGenerationFailed
                     }
                 }
-                
-                
-                
-
-//                if let existingId = self.barcodeDocId {
-//                    currentID = existingId
-//                    // Опционально: можно обновить дату изменения документа здесь
-//                } else {
-//                    let newDoc = BarcodeDoc(
-//                        barcodeDocId: nil,
-//                        status: "ACTIVE",
-//                        uuid1C: "",
-//                        creationTimestamp: Date()
-//                    )
-//                    
-//                    if let savedDoc = try newDoc.insertAndFetch(db) {
-//                        guard let id = savedDoc.barcodeDocId else {
-//                            throw DatabaseError.idGenerationFailed
-//                        }
-//                        currentID = id
-//                    } else {
-//                        throw DatabaseError.idGenerationFailed
-//                    }
-//                }
 
                 try BarcodeDocDetail.filter(Column("barcodeDocId") == currentID).deleteAll(db)
 
@@ -163,7 +139,6 @@ class BarcodeDetailVM: ObservableObject {
                 }
             }
         } catch {
-            print("❌ Ошибка сохранения: \(error)")
             Task { @MainActor in
                 self.alertMessage = "Ошибка БД: \(error.localizedDescription)"
                 self.showingAlert = true
@@ -182,9 +157,7 @@ class BarcodeDetailVM: ObservableObject {
             switch result {
             case .success(let code):
                 self.lastScannedBarcode = code
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.findProduct(barcode: code)
-                }
+                self.findProduct(barcode: code)
             case .failure(let error):
                 if error == .simulatedError {
                     return
@@ -196,6 +169,9 @@ class BarcodeDetailVM: ObservableObject {
     }
     
     func findProduct(barcode: String) {
+        
+        self.curBarcodeDocDetail = nil
+        
         guard !barcode.isEmpty else {
             self.alertMessage =  "❌ Введите или отсканируйте штрихкод."
             self.showingAlert = true
@@ -255,7 +231,11 @@ class BarcodeDetailVM: ObservableObject {
                                     self.alertMessage = "Товар не найден."
                                     self.showingAlert = true
                                 }else{
-                                    self.curBarcodeDocDetail = self.getBarcodeDocDetail(productData: productResponse)
+                                    let newDetail = self.getBarcodeDocDetail(productData: productResponse)
+                                    if var finalDetail = newDetail {
+                                        finalDetail.barcode = barcode
+                                        self.curBarcodeDocDetail = finalDetail
+                                    }
                                     self.showQuantityDialog = true
                                 }
                             } catch {
@@ -309,11 +289,17 @@ class BarcodeDetailVM: ObservableObject {
     }
     
     func addProductWithQuantity(_ qty: Int) {
-        guard var itemToSave = curBarcodeDocDetail else { return }
-
-        itemToSave.quantity = qty
+        guard var itemToSave = self.curBarcodeDocDetail else { return }
+        if let index = barcodeList.firstIndex(where: {
+            $0.barcode == itemToSave.barcode &&
+            $0.productSpecUuid1C == itemToSave.productSpecUuid1C
+        }) {
+            barcodeList[index].quantity += qty
+        } else {
+            itemToSave.quantity = qty
+            self.barcodeList.append(itemToSave)
+        }
         
-        self.barcodeList.append(itemToSave)
         self.curBarcodeDocDetail = nil
         self.showQuantityDialog = false
     }
