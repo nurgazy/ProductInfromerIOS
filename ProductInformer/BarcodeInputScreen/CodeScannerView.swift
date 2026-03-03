@@ -113,7 +113,10 @@ class ScannerViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         checkPermissionsAndSetup()
-        addDismissButton()
+        DispatchQueue.main.async {
+            self.setupScanningOverlay()
+            self.addDismissButton()
+        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -257,16 +260,6 @@ class ScannerViewController: UIViewController {
     // MARK: - UI
     
     private func addDismissButton() {
-//        let dismissButton = UIButton(type: .system)
-//        dismissButton.setTitle("Отмена", for: .normal)
-//        dismissButton.setTitleColor(.white, for: .normal)
-//        dismissButton.backgroundColor = UIColor(white: 0, alpha: 0.5)
-//        dismissButton.layer.cornerRadius = 10
-//        //dismissButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 20, bottom: 10, right: 20)
-//        dismissButton.translatesAutoresizingMaskIntoConstraints = false
-//        dismissButton.addTarget(self, action: #selector(dismissScanner), for: .touchUpInside)
-//        
-//        view.addSubview(dismissButton)
         
         var config = UIButton.Configuration.filled()
         config.title = "Отмена"
@@ -290,6 +283,44 @@ class ScannerViewController: UIViewController {
 
     @objc private func dismissScanner() {
         delegate?.scannerDidFail(error: .simulatedError)
+    }
+    
+    private func setupScanningOverlay() {
+        // 1. Определяем размеры рамки (30% от высоты экрана, во всю ширину)
+        let overlayHeight = view.bounds.height * 0.3
+        let overlayRect = CGRect(
+            x: 0,
+            y: (view.bounds.height - overlayHeight) / 2,
+            width: view.bounds.width,
+            height: overlayHeight
+        )
+        
+        // 2. Создаем фоновый слой с затемнением
+        let backgroundPath = UIBezierPath(rect: view.bounds)
+        let scannerPath = UIBezierPath(rect: overlayRect)
+        backgroundPath.append(scannerPath.reversing())
+        
+        let maskLayer = CAShapeLayer()
+        maskLayer.path = backgroundPath.cgPath
+        maskLayer.fillColor = UIColor.black.withAlphaComponent(0.6).cgColor
+        
+        view.layer.addSublayer(maskLayer)
+        
+        // 3. Рисуем видимую рамку (границы)
+        let borderLayer = CAShapeLayer()
+        borderLayer.path = scannerPath.cgPath
+        borderLayer.strokeColor = UIColor.white.cgColor // Цвет рамки
+        borderLayer.lineWidth = 4
+        borderLayer.fillColor = UIColor.clear.cgColor
+        
+        view.layer.addSublayer(borderLayer)
+        
+        // 4. Ограничиваем область сканирования (metadataOutput)
+        // Это заставит камеру "искать" штрихкод только внутри этой рамки
+        if let metadataOutput = captureSession?.outputs.first as? AVCaptureMetadataOutput {
+            // Координаты rectOfInterest инвертированы (0..1)
+            metadataOutput.rectOfInterest = previewLayer.metadataOutputRectConverted(fromLayerRect: overlayRect)
+        }
     }
 }
 
