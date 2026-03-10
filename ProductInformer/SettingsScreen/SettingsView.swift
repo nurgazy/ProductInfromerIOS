@@ -1,6 +1,5 @@
 import SwiftUI
 
-// MARK: - Settings View
 struct SettingsView: View {
     
     @StateObject private var viewModel: SettingsViewModel
@@ -16,13 +15,10 @@ struct SettingsView: View {
     }
     
     var body: some View {
-        // ⭐ Единый ZStack для закрепления кнопок внизу
+
         ZStack(alignment: .bottom) {
-            
-            // ⭐ 1. Основное прокручиваемое содержимое
+
             VStack(spacing: 0) {
-                
-                // ⭐ 2. Вкладки сверху (Picker в стиле Segmented)
                 Picker("Настройки", selection: $selectedTab) {
                     ForEach(SettingsTab.allCases) { tab in
                         Text(tab.rawValue).tag(tab)
@@ -94,7 +90,6 @@ struct SettingsView: View {
                     TextField("Имя публикации", text: $viewModel.publicationName).autocapitalization(.none).multilineTextAlignment(.trailing)
                 }
                 
-                // ⭐ Исправлено название поля: "Публикации" -> "Пользователь"
                 HStack{
                     Text("Пользователь")
                     Spacer()
@@ -115,13 +110,15 @@ struct SettingsView: View {
         Form {
             VStack{
                 Toggle("Все характеристики", isOn: $viewModel.isFullSpecific)
+                
+                Toggle("Циклическое сканирование", isOn: $viewModel.isCyclicScanning)
+                    .help("После успешного поиска сканер откроется автоматически")
             }
         }
     }
     
     @ViewBuilder
     func BottomButtons(saveAction: @escaping () -> Void, checkAction: @escaping () -> Void) -> some View {
-        // ⭐ Убрали лишний Spacer() из VStack, который мешал ZStack
         VStack(spacing: 0) {
             Divider()
             HStack {
@@ -139,7 +136,6 @@ struct SettingsView: View {
 
 #Preview {
     struct SettingsViewPreview: View {
-            // Создаем состояние для имитации внешних зависимостей
         @State private var mockCurrentRoot: String = "settings"
         @State private var mockNavigationPath: NavigationPath? = nil
         

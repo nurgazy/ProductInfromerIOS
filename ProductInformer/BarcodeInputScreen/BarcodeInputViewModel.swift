@@ -3,16 +3,6 @@ import SwiftUI
 import Combine
 import KeychainAccess
 
-struct ConnectionSettings {
-    let protocolSelection: String
-    let serverAddress: String
-    let port: Int
-    let publicationName: String
-    let username: String
-    let password: String
-    let isFullSpecific: Bool
-}
-
 final class BarcodeInputViewModel: ObservableObject {
     
     @Published var isSearching: Bool = false
@@ -39,14 +29,15 @@ final class BarcodeInputViewModel: ObservableObject {
         let defaults = UserDefaults.standard
         let keychain = Keychain(service: Bundle.main.bundleIdentifier ?? "com.productinformer.keys")
         
-        let protocolSelection = defaults.string(forKey: SettingKeys.protocolSelection) ?? "HTTPS"
-        let serverAddress = defaults.string(forKey: SettingKeys.serverAddress) ?? ""
-        let savedPort = defaults.integer(forKey: SettingKeys.port)
+        let protocolSelection = defaults.string(forKey: AppSettingKey.protocolSelection) ?? "HTTPS"
+        let serverAddress = defaults.string(forKey: AppSettingKey.serverAddress) ?? ""
+        let savedPort = defaults.integer(forKey: AppSettingKey.port)
         let port = savedPort > 0 ? savedPort : 443
-        let publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? ""
-        let username = defaults.string(forKey: SettingKeys.username) ?? ""
-        let password = keychain[SettingKeys.password] ?? ""
-        let isFullSpecific = defaults.bool(forKey: SettingKeys.isFullSpecific)
+        let publicationName = defaults.string(forKey: AppSettingKey.publicationName) ?? ""
+        let username = defaults.string(forKey: AppSettingKey.username) ?? ""
+        let password = keychain[AppSettingKey.password] ?? ""
+        let isFullSpecific = defaults.bool(forKey: AppSettingKey.isFullSpecific)
+        let isCyclicScan = defaults.bool(forKey: AppSettingKey.isCyclicScanning)
         
         return ConnectionSettings(
             protocolSelection: protocolSelection,
@@ -55,7 +46,8 @@ final class BarcodeInputViewModel: ObservableObject {
             publicationName: publicationName,
             username: username,
             password: password,
-            isFullSpecific: isFullSpecific
+            isFullSpecific: isFullSpecific,
+            isCyclicScan: isCyclicScan
         )
     }
     

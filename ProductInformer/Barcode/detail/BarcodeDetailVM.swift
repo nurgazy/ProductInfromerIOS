@@ -55,14 +55,15 @@ class BarcodeDetailVM: ObservableObject {
         let defaults = UserDefaults.standard
         let keychain = Keychain(service: Bundle.main.bundleIdentifier ?? "com.productinformer.keys")
         
-        let protocolSelection = defaults.string(forKey: SettingKeys.protocolSelection) ?? "HTTPS"
-        let serverAddress = defaults.string(forKey: SettingKeys.serverAddress) ?? ""
-        let savedPort = defaults.integer(forKey: SettingKeys.port)
+        let protocolSelection = defaults.string(forKey: AppSettingKey.protocolSelection) ?? "HTTPS"
+        let serverAddress = defaults.string(forKey: AppSettingKey.serverAddress) ?? ""
+        let savedPort = defaults.integer(forKey: AppSettingKey.port)
         let port = savedPort > 0 ? savedPort : 443
-        let publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? ""
-        let username = defaults.string(forKey: SettingKeys.username) ?? ""
-        let password = keychain[SettingKeys.password] ?? ""
-        let isFullSpecific = defaults.bool(forKey: SettingKeys.isFullSpecific)
+        let publicationName = defaults.string(forKey: AppSettingKey.publicationName) ?? ""
+        let username = defaults.string(forKey: AppSettingKey.username) ?? ""
+        let password = keychain[AppSettingKey.password] ?? ""
+        let isFullSpecific = defaults.bool(forKey: AppSettingKey.isFullSpecific)
+        let isCyclicScan = defaults.bool(forKey: AppSettingKey.isCyclicScanning)
         
         return ConnectionSettings(
             protocolSelection: protocolSelection,
@@ -71,7 +72,8 @@ class BarcodeDetailVM: ObservableObject {
             publicationName: publicationName,
             username: username,
             password: password,
-            isFullSpecific: isFullSpecific
+            isFullSpecific: isFullSpecific,
+            isCyclicScan: isCyclicScan
         )
     }
 
@@ -236,7 +238,15 @@ class BarcodeDetailVM: ObservableObject {
                                         finalDetail.barcode = barcode
                                         self.curBarcodeDocDetail = finalDetail
                                     }
-                                    self.showQuantityDialog = true
+                                    
+                                    let isCyclicScan = connectionSettings.isCyclicScan
+                                    if isCyclicScan {
+                                        self.addProductWithQuantity(1)
+                                        self.restartScanner()
+                                    }else{
+                                        self.showQuantityDialog = true
+                                    }
+                                    
                                 }
                             } catch {
                                 self.alertMessage = "❌ Ошибка декодирования: \(error.localizedDescription)"
@@ -417,6 +427,18 @@ class BarcodeDetailVM: ObservableObject {
         components.path = "/\(connectionSettings.publicationName)\(basePath)"
 
         return components.url
+    }
+    
+    private func restartScanner() {
+        self.isSearching = false
+        self.showScanner = false
+        
+        Task {
+            try? await Task.sleep(for: .seconds(0.5))
+            await MainActor.run {
+                self.showScanner = true
+            }
+        }
     }
     
 }

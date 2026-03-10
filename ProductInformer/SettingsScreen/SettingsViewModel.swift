@@ -2,27 +2,15 @@ import Foundation
 import SwiftUI
 import KeychainAccess
 
-struct SettingKeys {
-    static let protocolSelection = "protocolSelectionKey"
-    static let serverAddress = "serverAddressKey"
-    static let port = "portKey"
-    static let publicationName = "publicationNameKey"
-    static let username = "usernameKey"
-    static let password = "passwordKey"
-    static let isFullSpecific = "isFullSpecificKey"
-}
-
-
-// ViewModel для управления настройками и переходами
 final class SettingsViewModel: ObservableObject {
-    
-    // @Published автоматически оповещает View об изменениях
+
     @Published var protocolSelection: String = "HTTPS"
     @Published var serverAddress: String = ""
     @Published var port: Int = 80
     @Published var publicationName: String = ""
     @Published var username: String = ""
     @Published var password: String = ""
+    @Published var isCyclicScanning: Bool = false
     
     @Published var isFullSpecific: Bool = false
     
@@ -54,25 +42,15 @@ final class SettingsViewModel: ObservableObject {
     func loadSettings() {
         let defaults = UserDefaults.standard
         
-        // 1. Протокол (String)
-        self.protocolSelection = defaults.string(forKey: SettingKeys.protocolSelection) ?? "HTTPS"
-        
-        // 2. Адрес сервера (String)
-        self.serverAddress = defaults.string(forKey: SettingKeys.serverAddress) ?? ""
-        
-        // 3. Порт (Int - загружаем как Int, предоставляя дефолт 80)
-        // .integer(forKey:) возвращает 0, если ключ не найден, поэтому нужна проверка
-        let savedPort = defaults.integer(forKey: SettingKeys.port)
+        self.protocolSelection = defaults.string(forKey: AppSettingKey.protocolSelection) ?? "HTTPS"
+        self.serverAddress = defaults.string(forKey: AppSettingKey.serverAddress) ?? ""
+        let savedPort = defaults.integer(forKey: AppSettingKey.port)
         self.port = savedPort > 0 ? savedPort : 443
-        
-        // 4. Имя публикации (String)
-        self.publicationName = defaults.string(forKey: SettingKeys.publicationName) ?? ""
-        
-        // 5. Имя пользователя (String)
-        self.username = defaults.string(forKey: SettingKeys.username) ?? ""
-        self.password = keychain[SettingKeys.password] ?? ""
-        
-        self.isFullSpecific = defaults.bool(forKey: SettingKeys.isFullSpecific)
+        self.publicationName = defaults.string(forKey: AppSettingKey.publicationName) ?? ""
+        self.username = defaults.string(forKey: AppSettingKey.username) ?? ""
+        self.password = keychain[AppSettingKey.password] ?? ""
+        self.isFullSpecific = defaults.bool(forKey: AppSettingKey.isFullSpecific)
+        self.isCyclicScanning = defaults.bool(forKey: AppSettingKey.isCyclicScanning)
     }
     
     func handleProtocolChange(newProtocol: String) {
@@ -87,11 +65,8 @@ final class SettingsViewModel: ObservableObject {
         saveSettings()
         
         currentRoot = "barcodeInput"
-        // Условная логика навигации
         if #available(iOS 16.0, *) {
             coordinatorPath.wrappedValue = NavigationPath()
-//            let target = AppNavigationTarget(destinationID: "barcodeInput", productString: "")
-//            coordinatorPath.wrappedValue?.append(AppNavigation.view(target))
         } else {
             isActiveLink = true
         }
@@ -100,22 +75,22 @@ final class SettingsViewModel: ObservableObject {
     func saveSettings() {
         let defaults = UserDefaults.standard
         
-        defaults.set(self.protocolSelection, forKey: SettingKeys.protocolSelection)
-        defaults.set(self.serverAddress, forKey: SettingKeys.serverAddress)
-        defaults.set(self.port, forKey: SettingKeys.port) // Сохраняем Int напрямую
-        defaults.set(self.publicationName, forKey: SettingKeys.publicationName)
-        defaults.set(self.username, forKey: SettingKeys.username)
+        defaults.set(self.protocolSelection, forKey: AppSettingKey.protocolSelection)
+        defaults.set(self.serverAddress, forKey: AppSettingKey.serverAddress)
+        defaults.set(self.port, forKey: AppSettingKey.port) // Сохраняем Int напрямую
+        defaults.set(self.publicationName, forKey: AppSettingKey.publicationName)
+        defaults.set(self.username, forKey: AppSettingKey.username)
         if self.password.isEmpty {
-            try? keychain.remove(SettingKeys.password)
+            try? keychain.remove(AppSettingKey.password)
         } else {
-            keychain[SettingKeys.password] = self.password
+            keychain[AppSettingKey.password] = self.password
         }
         
-        defaults.set(self.isFullSpecific, forKey: SettingKeys.isFullSpecific)
+        defaults.set(self.isFullSpecific, forKey: AppSettingKey.isFullSpecific)
+        defaults.set(self.isCyclicScanning, forKey: AppSettingKey.isCyclicScanning)
     }
     
     func checkConnection() {
-        // Устанавливаем индикатор загрузки и сбрасываем статус
         Task { @MainActor in
             self.isChecking = true
             self.connectionStatus = "Подключение..."
@@ -133,8 +108,7 @@ final class SettingsViewModel: ObservableObject {
         // 2. Создание запроса
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        
-        // 3. Basic Authentication (имя пользователя:пароль -> Base64)
+
         let authString = "\(username):\(password)"
         if let data = authString.data(using: .utf8) {
             let base64Auth = data.base64EncodedString()

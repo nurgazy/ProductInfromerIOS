@@ -1,13 +1,12 @@
 import Foundation
-import SwiftUI
 
 public struct AppSettingKey {
-    static let protocolSelection = "protocolSelectionKey"
-    static let serverAddress = "serverAddressKey"
-    static let port = "portKey"
-    static let publicationName = "publicationNameKey"
-    static let username = "usernameKey"
-    static let password = "passwordKey"
-    static let isFullSpecific = "isFullSpecificKey"
-    static let isCyclicScanning = "isCyclicScanningKey"
+    public static let protocolSelection = "protocolSelectionKey"
+    public static let serverAddress = "serverAddressKey"
+    public static let port = "portKey"
+    public static let publicationName = "publicationNameKey"
+    public static let username = "usernameKey"
+    public static let password = "passwordKey"
+    public static let isFullSpecific = "isFullSpecificKey"
+    public static let isCyclicScanning = "isCyclicScanningKey"
 }

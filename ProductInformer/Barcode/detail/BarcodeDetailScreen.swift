@@ -32,7 +32,6 @@ struct BarcodeDetailScreen: View {
                 }
                 .listStyle(.plain)
                 
-                // Панель кнопок (Аналог нижнего Column в Kotlin)
                 VStack(spacing: 12) {
                     HStack(spacing: 16) {
                         Button(action: {
