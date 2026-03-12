@@ -6,6 +6,7 @@ struct BarcodeDoc: Codable, FetchableRecord, PersistableRecord {
     var status: String // В Swift обычно используется String или Enum для статусов
     var uuid1C: String
     var creationTimestamp: Date
+    var comment: String = ""
     
     // Определение названий столбцов для удобства запросов
     enum Columns {
@@ -13,6 +14,7 @@ struct BarcodeDoc: Codable, FetchableRecord, PersistableRecord {
         static let status = Column(CodingKeys.status)
         static let uuid1C = Column(CodingKeys.uuid1C)
         static let creationTimestamp = Column(CodingKeys.creationTimestamp)
+        static let comment = Column(CodingKeys.comment)
     }
     
     // Имя таблицы в БД

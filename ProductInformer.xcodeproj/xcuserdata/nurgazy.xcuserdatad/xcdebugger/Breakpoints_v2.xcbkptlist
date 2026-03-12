@@ -46,8 +46,8 @@
             filePath = "ProductInformer/Barcode/detail/BarcodeDetailVM.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "236"
-            endingLineNumber = "236"
+            startingLineNumber = "268"
+            endingLineNumber = "268"
             landmarkName = "findProduct(barcode:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -62,8 +62,8 @@
             filePath = "ProductInformer/Barcode/detail/BarcodeDetailVM.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "313"
-            endingLineNumber = "313"
+            startingLineNumber = "345"
+            endingLineNumber = "345"
             landmarkName = "addProductWithQuantity(_:)"
             landmarkType = "7">
          </BreakpointContent>

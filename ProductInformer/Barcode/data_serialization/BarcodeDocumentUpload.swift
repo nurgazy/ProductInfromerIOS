@@ -5,6 +5,7 @@ struct BarcodeDocumentUpload: Codable {
     let uuid1C: String
     let username: String
     let docDate: String
+    let comment: String
     let items: [BarcodeDocumentItemUpload]
 }
 

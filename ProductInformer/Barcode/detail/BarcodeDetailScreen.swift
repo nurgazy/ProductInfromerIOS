@@ -16,55 +16,57 @@ struct BarcodeDetailScreen: View {
     var body: some View {
         ZStack {
             VStack {
-                TextField("Поиск по названию или штрихкоду", text: $viewModel.searchText)
-                    .padding(10)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-                    .padding(.horizontal)
-                    .padding(.top, 5)
-                
-                List {
-                    ForEach(Array(viewModel.filteredBarcodeList.enumerated()), id: \.offset) { index, item in
-                            BarcodeDetailListItem(itemNumber: index + 1, item: item) {
-                                viewModel.deleteItem(item)
+                TabView {
+
+                    VStack {
+                        TextField("Поиск по названию или штрихкоду", text: $viewModel.searchText)
+                            .padding(10)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                            .padding(.horizontal)
+                            .padding(.top, 5)
+                        
+                        List {
+                            ForEach(Array(viewModel.filteredBarcodeList.enumerated()), id: \.offset) { index, item in
+                                BarcodeDetailListItem(itemNumber: index + 1, item: item) {
+                                    viewModel.deleteItem(item)
+                                }
                             }
                         }
-                }
-                .listStyle(.plain)
-                
-                VStack(spacing: 12) {
-                    HStack(spacing: 16) {
-                        Button(action: {
-                            viewModel.saveDoc()
-                        }) {
-                            Label("Сохранить", systemImage: "checkmark.circle.fill")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.blue)
+                        .listStyle(.plain)
+                    }
+                    .tabItem {
+                        Label("Товары", systemImage: "cart.fill")
+                    }
+
+                    VStack(spacing: 0) {
+                        Text("Комментарий к документу")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding([.horizontal, .top])
+
+                        TextEditor(text: Binding(
+                            get: { viewModel.curBarcodeDoc?.comment ?? "" },
+                            set: { viewModel.updateComment($0) }
+                        ))
+                        .padding(4)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
+                        )
+                        .padding()
                         
-                        Button(action: { viewModel.showScanner = true }) {
-                            Label("Сканер", systemImage: "barcode.viewfinder")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
+                        Spacer()
                     }
-                    
-                    Button(action: { viewModel.uploadTo1C() }) {
-                        if viewModel.isUploading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        } else {
-                            Label(viewModel.isUploaded ? "Выгружено" : "Выгрузить",
-                                  systemImage: viewModel.isUploaded ? "checkmark.seal.fill" : "arrow.up.doc")
-                                .frame(maxWidth: .infinity)
-                        }
+                    .tabItem {
+                        Label("Доп. инфо", systemImage: "info.circle.fill")
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(viewModel.isUploaded || viewModel.barcodeList.isEmpty)
-                    .tint(viewModel.isUploaded ? .gray : .blue)
                 }
-                .padding()
+                
+                Divider()
+                actionButtons
             }
             
             if viewModel.showQuantityDialog, let item = viewModel.curBarcodeDocDetail {
@@ -95,5 +97,41 @@ struct BarcodeDetailScreen: View {
             Text(viewModel.alertMessage)
         }
         .navigationTitle("Документ №\(viewModel.curBarcodeDoc?.barcodeDocId ?? 0)")
+    }
+    
+    private var actionButtons: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 16) {
+                Button(action: {
+                    viewModel.saveDoc()
+                }) {
+                    Label("Сохранить", systemImage: "checkmark.circle.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.blue)
+                
+                Button(action: { viewModel.showScanner = true }) {
+                    Label("Сканер", systemImage: "barcode.viewfinder")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            }
+            
+            Button(action: { viewModel.uploadTo1C() }) {
+                if viewModel.isUploading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                } else {
+                    Label(viewModel.isUploaded ? "Выгружено" : "Выгрузить",
+                          systemImage: viewModel.isUploaded ? "checkmark.seal.fill" : "arrow.up.doc")
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(viewModel.isUploaded || viewModel.barcodeList.isEmpty)
+            .tint(viewModel.isUploaded ? .gray : .blue)
+        }
+        .padding()
     }
 }

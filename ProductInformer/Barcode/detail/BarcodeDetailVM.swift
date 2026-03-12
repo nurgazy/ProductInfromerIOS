@@ -48,7 +48,7 @@ class BarcodeDetailVM: ObservableObject {
         if self.barcodeDocId != nil {
             loadData()
         }
-        
+        self.observeBarcodeDetails()
     }
     
     private static func loadConnectionSettings() -> ConnectionSettings {
@@ -77,16 +77,48 @@ class BarcodeDetailVM: ObservableObject {
         )
     }
 
+    private func observeBarcodeDetails() {
+        guard let docId = self.barcodeDocId else { return }
+        
+        let observation = ValueObservation.tracking { db in
+            try BarcodeDocDetail
+                .filter(Column("barcodeDocId") == docId)
+                .fetchAll(db)
+        }
+
+        observation.publisher(in: dbQueue)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { completion in
+                if case .failure(let error) = completion {
+                    print("Ошибка наблюдения: \(error)")
+                }
+            }, receiveValue: { [weak self] items in
+                self?.barcodeList = items
+            })
+            .store(in: &cancellables)
+    }
+
     func loadData() {
         guard let id = barcodeDocId else { return }
         
-        try? dbQueue.read { db in
-            self.curBarcodeDoc = try BarcodeDoc.fetchOne(db, key: id)
+        Task {
+            do {
+                let doc = try await dbQueue.read { db in
+                    try BarcodeDoc.fetchOne(db, key: id)
+                }
+                await MainActor.run {
+                    self.curBarcodeDoc = doc
+                }
+            } catch {
+                print("Ошибка загрузки заголовка: \(error)")
+            }
         }
         
         ValueObservation.tracking { db in
             try BarcodeDocDetail.filter(Column("barcodeDocId") == id).fetchAll(db)
-        }.publisher(in: dbQueue)
+        }
+        .publisher(in: dbQueue)
+        .receive(on: DispatchQueue.main)
         .sink(receiveCompletion: { _ in }, receiveValue: { [weak self] items in
             self?.barcodeList = items
         })
@@ -364,6 +396,7 @@ class BarcodeDetailVM: ObservableObject {
             uuid1C: curBarcodeDoc?.uuid1C ?? "",
             username: connectionSettings.username,
             docDate: dateStringFor1C,
+            comment: curBarcodeDoc?.comment ?? "",
             items: uploadItems
         )
 
@@ -439,6 +472,12 @@ class BarcodeDetailVM: ObservableObject {
                 self.showScanner = true
             }
         }
+    }
+    
+    func updateComment(_ newComment: String) {
+        guard var doc = curBarcodeDoc else { return }
+        doc.comment = newComment
+        self.curBarcodeDoc = doc
     }
     
 }
