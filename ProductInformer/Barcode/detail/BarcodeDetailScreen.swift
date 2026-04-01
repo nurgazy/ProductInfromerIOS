@@ -17,52 +17,15 @@ struct BarcodeDetailScreen: View {
         ZStack {
             VStack {
                 TabView {
-
-                    VStack {
-                        TextField("Поиск по названию или штрихкоду", text: $viewModel.searchText)
-                            .padding(10)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                            .padding(.horizontal)
-                            .padding(.top, 5)
-                        
-                        List {
-                            ForEach(Array(viewModel.filteredBarcodeList.enumerated()), id: \.offset) { index, item in
-                                BarcodeDetailListItem(itemNumber: index + 1, item: item) {
-                                    viewModel.deleteItem(item)
-                                }
-                            }
+                    ProductsTabView(viewModel: viewModel)
+                        .tabItem {
+                            Label("Товары", systemImage: "cart.fill")
                         }
-                        .listStyle(.plain)
-                    }
-                    .tabItem {
-                        Label("Товары", systemImage: "cart.fill")
-                    }
 
-                    VStack(spacing: 0) {
-                        Text("Комментарий к документу")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding([.horizontal, .top])
-
-                        TextEditor(text: Binding(
-                            get: { viewModel.curBarcodeDoc?.comment ?? "" },
-                            set: { viewModel.updateComment($0) }
-                        ))
-                        .padding(4)
-                        .background(Color(.systemBackground))
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color(.systemGray4), lineWidth: 1)
-                        )
-                        .padding()
-                        
-                        Spacer()
-                    }
-                    .tabItem {
-                        Label("Доп. инфо", systemImage: "info.circle.fill")
-                    }
+                    AdditionalInfoTabView(viewModel: viewModel)
+                        .tabItem {
+                            Label("Доп. инфо", systemImage: "info.circle.fill")
+                        }
                 }
                 
                 Divider()
@@ -90,6 +53,18 @@ struct BarcodeDetailScreen: View {
                 viewModel.showScanner = false
             }
             .ignoresSafeArea()
+        }
+        .sheet(isPresented: $viewModel.showSpecPicker) {
+            SpecPickerSheet(
+                specs: viewModel.availableSpecs,
+                onSelect: { spec in
+                    viewModel.selectCharacteristic(spec)
+                },
+                onDismiss: {
+                    viewModel.showSpecPicker = false
+                }
+            )
+            .presentationDetents([.medium, .large]) // Для iOS 16+ сделаем удобную шторку
         }
         .alert("Внимание", isPresented: $viewModel.showingAlert) {
             Button("OK", role: .cancel) { }

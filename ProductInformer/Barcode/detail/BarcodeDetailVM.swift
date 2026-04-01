@@ -23,6 +23,10 @@ class BarcodeDetailVM: ObservableObject {
     private var coordinatorPath: Binding<NavigationPath?>
     private var connectionSettings: ConnectionSettings
     
+    @Published var showSpecPicker = false
+    @Published var availableSpecs: [Characteristic] = []
+    private var pendingProductResponse: ProductResponse?
+    
     var lastScannedBarcode: String = ""
 
     // Вычисляемое свойство для фильтрации списка
@@ -265,18 +269,26 @@ class BarcodeDetailVM: ObservableObject {
                                     self.alertMessage = "Товар не найден."
                                     self.showingAlert = true
                                 }else{
-                                    let newDetail = self.getBarcodeDocDetail(productData: productResponse)
-                                    if var finalDetail = newDetail {
-                                        finalDetail.barcode = barcode
-                                        self.curBarcodeDocDetail = finalDetail
-                                    }
+                                    let specs = productResponse.characteristics ?? []
                                     
-                                    let isCyclicScan = connectionSettings.isCyclicScan
-                                    if isCyclicScan {
-                                        self.addProductWithQuantity(1)
-                                        self.restartScanner()
-                                    }else{
-                                        self.showQuantityDialog = true
+                                    if specs.count > 1 {
+                                        self.pendingProductResponse = productResponse
+                                        self.availableSpecs = specs
+                                        self.showSpecPicker = true
+                                        
+                                    } else {
+                                        let newDetail = self.getBarcodeDocDetail(productData: productResponse)
+                                        if var finalDetail = newDetail {
+                                            finalDetail.barcode = barcode
+                                            self.curBarcodeDocDetail = finalDetail
+                                        }
+                                        
+                                        if connectionSettings.isCyclicScan {
+                                            self.addProductWithQuantity(1)
+                                            self.restartScanner()
+                                        } else {
+                                            self.showQuantityDialog = true
+                                        }
                                     }
                                     
                                 }
@@ -478,6 +490,28 @@ class BarcodeDetailVM: ObservableObject {
         guard var doc = curBarcodeDoc else { return }
         doc.comment = newComment
         self.curBarcodeDoc = doc
+    }
+    
+    func selectCharacteristic(_ spec: Characteristic) {
+        guard let productResponse = pendingProductResponse else { return }
+        
+        let nomenclature = productResponse.nomenclature
+        let detail = BarcodeDocDetail(
+            barcodeDetailId: nil,
+            barcode: self.lastScannedBarcode,
+            productName: nomenclature.name,
+            productSpecName: spec.name,
+            productUuid1C: nomenclature.uuid1с,
+            productSpecUuid1C: spec.uuid1C,
+            barcodeDocId: self.barcodeDocId ?? 0,
+            quantity: 1
+        )
+        
+        self.curBarcodeDocDetail = detail
+        self.showSpecPicker = false
+        self.pendingProductResponse = nil
+
+        self.showQuantityDialog = true
     }
     
 }
