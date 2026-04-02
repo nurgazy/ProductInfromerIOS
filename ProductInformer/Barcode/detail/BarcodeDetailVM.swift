@@ -16,6 +16,7 @@ class BarcodeDetailVM: ObservableObject {
     @Published var showingAlert: Bool = false
     @Published var isSearching: Bool = false
     @Published var searchText: String = ""
+    @Published var showManualInput = false
     
     private let dbQueue: DatabaseQueue = AppDatabase.shared.dbQueue
     private var cancellables = Set<AnyCancellable>()
@@ -206,7 +207,7 @@ class BarcodeDetailVM: ObservableObject {
         }
     }
     
-    func findProduct(barcode: String) {
+    func findProduct(barcode: String, isManual: Bool = false) {
         
         self.curBarcodeDocDetail = nil
         
@@ -283,7 +284,7 @@ class BarcodeDetailVM: ObservableObject {
                                             self.curBarcodeDocDetail = finalDetail
                                         }
                                         
-                                        if connectionSettings.isCyclicScan {
+                                        if connectionSettings.isCyclicScan && !isManual {
                                             self.addProductWithQuantity(1)
                                             self.restartScanner()
                                         } else {
@@ -512,6 +513,14 @@ class BarcodeDetailVM: ObservableObject {
         self.pendingProductResponse = nil
 
         self.showQuantityDialog = true
+    }
+    
+    func processManualBarcode(_ barcode: String) {
+        let trimmed = barcode.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        
+        self.showManualInput = false
+        self.findProduct(barcode: trimmed, isManual: true)
     }
     
 }
