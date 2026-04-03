@@ -104,7 +104,7 @@ struct BarcodeDetailScreen: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(viewModel.isUploaded || viewModel.barcodeList.isEmpty)
+            .disabled(viewModel.barcodeList.isEmpty || viewModel.isUploading)
             .tint(viewModel.isUploaded ? .gray : .blue)
         }
         .padding()

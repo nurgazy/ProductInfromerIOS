@@ -17,6 +17,7 @@ class BarcodeDetailVM: ObservableObject {
     @Published var isSearching: Bool = false
     @Published var searchText: String = ""
     @Published var showManualInput = false
+    @Published var commentText: String = ""
     
     private let dbQueue: DatabaseQueue = AppDatabase.shared.dbQueue
     private var cancellables = Set<AnyCancellable>()
@@ -113,6 +114,7 @@ class BarcodeDetailVM: ObservableObject {
                 }
                 await MainActor.run {
                     self.curBarcodeDoc = doc
+                    self.commentText = doc?.comment ?? ""
                 }
             } catch {
                 print("Ошибка загрузки заголовка: \(error)")
@@ -138,6 +140,7 @@ class BarcodeDetailVM: ObservableObject {
                 
                 if let existingDoc = self.curBarcodeDoc {
                     doc = existingDoc
+                    doc.comment = self.commentText
                     doc.creationTimestamp = Date()
                     try doc.save(db)
                     guard let id = doc.barcodeDocId else {
@@ -148,8 +151,9 @@ class BarcodeDetailVM: ObservableObject {
                     doc = BarcodeDoc(
                         barcodeDocId: nil,
                         status: "ACTIVE",
-                        uuid1C: "",
-                        creationTimestamp: Date()
+                        uuid1C: UUID().uuidString,
+                        creationTimestamp: Date(),
+                        comment: self.commentText
                     )
                     
                     if let savedDoc = try doc.insertAndFetch(db) {
@@ -157,6 +161,7 @@ class BarcodeDetailVM: ObservableObject {
                             throw DatabaseError.idGenerationFailed
                         }
                         currentID = id
+                        doc = savedDoc
                     } else {
                         throw DatabaseError.idGenerationFailed
                     }
@@ -169,8 +174,7 @@ class BarcodeDetailVM: ObservableObject {
                     item.barcodeDetailId = nil
                     try item.insert(db)
                 }
-
-                // 3. Обновляем UI в главном потоке
+                
                 Task { @MainActor in
                     self.barcodeDocId = currentID
                     self.curBarcodeDoc = doc

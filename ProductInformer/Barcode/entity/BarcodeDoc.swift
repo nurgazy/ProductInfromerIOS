@@ -4,7 +4,7 @@ import GRDB
 struct BarcodeDoc: Codable, FetchableRecord, PersistableRecord {
     var barcodeDocId: Int64?
     var status: String // В Swift обычно используется String или Enum для статусов
-    var uuid1C: String
+    var uuid1C: String = UUID().uuidString
     var creationTimestamp: Date
     var comment: String = ""
     

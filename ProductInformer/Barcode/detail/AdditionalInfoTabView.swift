@@ -10,10 +10,7 @@ struct AdditionalInfoTabView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding([.horizontal, .top])
 
-            TextEditor(text: Binding(
-                get: { viewModel.curBarcodeDoc?.comment ?? "" },
-                set: { viewModel.updateComment($0) }
-            ))
+            TextEditor(text: $viewModel.commentText)
             .padding(4)
             .background(Color(.systemBackground))
             .cornerRadius(8)
