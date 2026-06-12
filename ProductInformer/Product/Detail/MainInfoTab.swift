@@ -13,9 +13,9 @@ struct MainInfoTab: View {
             }
 
             Section(header: Text("Статистика").font(.headline)) {
-                StatRow(label: "Кол-во закупки", value: nomenclature.quantityPurchase)
-                StatRow(label: "Кол-во продажи", value: nomenclature.quantitySold)
-                StatRow(label: "Текущий остаток", value: nomenclature.quantityBalance)
+                StatRow(label: "Кол-во закупки", value: nomenclature.quantityPurchase ?? 0)
+                StatRow(label: "Кол-во продажи", value: nomenclature.quantitySold ?? 0)
+                StatRow(label: "Текущий остаток", value: nomenclature.quantityBalance ?? 0)
             }
         }
         .listStyle(.insetGrouped)

@@ -28,9 +28,9 @@ struct Nomenclature: Decodable, Hashable, Encodable {
     let manufacturer: String?
     let brand: String?
     let productCategory: String?
-    let quantityPurchase: Int
-    let quantitySold: Int
-    let quantityBalance: Int
+    let quantityPurchase: Int?
+    let quantitySold: Int?
+    let quantityBalance: Int?
     
     enum CodingKeys: String, CodingKey {
         case name = "Наименование"

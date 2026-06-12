@@ -327,7 +327,7 @@ class BarcodeDetailVM: ObservableObject {
     
     private func buildSearchURL(barcode: String) -> URL? {
         // Базовый путь остается прежним
-        let basePath = "/hs/ProductInformation/Info"
+        let basePath = "/hs/ProductInformation/products"
         
         var components = URLComponents()
         components.scheme = connectionSettings.protocolSelection.lowercased()

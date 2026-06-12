@@ -5,6 +5,7 @@ struct FullProductDetailList: View {
     
     var body: some View {
         List {
+            
             if let characteristics = product.characteristics, !characteristics.isEmpty {
                 ForEach(characteristics, id: \.uuid1C) { characteristic in
                     CharacteristicDetailSection(characteristic: characteristic)
@@ -13,6 +14,7 @@ struct FullProductDetailList: View {
                 Text("Характеристики и цены не указаны")
                     .foregroundColor(.secondary)
             }
+            
         }
         .listStyle(.insetGrouped)
     }
@@ -22,12 +24,13 @@ struct FullProductDetailList: View {
 struct CharacteristicDetailSection: View {
     let characteristic: Characteristic
     
-    @State private var isStocksExpanded: Bool = true // По умолчанию открыто для демонстрации
+    @State private var isAllCharacteristicsExpanded: Bool = false
+    @State private var isStocksExpanded: Bool = true
     @State private var isPricesExpanded: Bool = true
     
     var body: some View {
-        Section(header: Text("\(characteristic.name)").font(.headline)) {
-
+//        Section(header: Text("\(characteristic.name)").font(.headline)) {
+        DisclosureGroup(characteristic.name, isExpanded: $isAllCharacteristicsExpanded) {
             DisclosureGroup("Остатки (В наличии/Доступно)", isExpanded: $isStocksExpanded) {
                 ForEach(characteristic.stocks ?? [], id: \.warehouse) { stock in
                     StockDetailRow(stock: stock)
@@ -46,6 +49,7 @@ struct CharacteristicDetailSection: View {
                 }
             }
         }
+//        }
     }
 }
 
