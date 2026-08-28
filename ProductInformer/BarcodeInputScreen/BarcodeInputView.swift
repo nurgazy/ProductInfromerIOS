@@ -60,22 +60,19 @@ struct BarcodeInputView: View {
             .padding(.bottom, 40)
         }
         .padding(.top, 30)
-        // Скрытый NavigationLink для iOS 15- (используется, когда coordinatorPath = nil)
-        .background(
-            NavigationLink(
-                destination: ProductDetailView(productString: viewModel.productDetailJSONString ?? ""),
-                isActive: $viewModel.isActiveLink,
-                label: { EmptyView() }
-            )
-            .hidden()
-        )
-        
+        .modifier(ProductDetailNavigationModifier(viewModel: viewModel))
         .sheet(isPresented: $viewModel.isScanning) {
-            CodeScannerView { result in
-                viewModel.handleScanResult(result: result)
-            }
-            .onDisappear {
-                viewModel.isScanning = false
+            MLKitScannerView { result in
+                switch result {
+                case .success(let code):
+                    viewModel.barcode = code
+                    viewModel.isScanning = false
+                    viewModel.findProduct()
+                case .failure(let error):
+                    viewModel.isScanning = false
+                    viewModel.alertMessage = "Ошибка сканера: \(error)"
+                    viewModel.showingAlert = true
+                }
             }
             .ignoresSafeArea()
         }
@@ -87,6 +84,29 @@ struct BarcodeInputView: View {
         .navigationTitle("Ввод штрихкода")
     }
 
+}
+
+private struct ProductDetailNavigationModifier: ViewModifier {
+    @ObservedObject var viewModel: BarcodeInputViewModel
+
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content
+                .navigationDestination(isPresented: $viewModel.isActiveLink) {
+                    ProductDetailView(productString: viewModel.productDetailJSONString ?? "")
+                }
+        } else {
+            content
+                .background(
+                    NavigationLink(
+                        destination: ProductDetailView(productString: viewModel.productDetailJSONString ?? ""),
+                        isActive: $viewModel.isActiveLink,
+                        label: { EmptyView() }
+                    )
+                    .hidden()
+                )
+        }
+    }
 }
 
 #Preview {
