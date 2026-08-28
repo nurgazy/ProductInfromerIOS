@@ -6,8 +6,8 @@ import KeychainAccess
 final class BarcodeInputViewModel: ObservableObject {
     
     @Published var isSearching: Bool = false
-    @Published var isActiveLink: Bool = false      // Для iOS 15-
-    @Published var productDetailJSONString: String? = nil  // Данные для экрана деталей (iOS 15-)
+    @Published var isActiveLink: Bool = false
+    @Published var productDetailJSONString: String? = nil
     
     @Published var barcode: String = ""
     @Published var isScanning: Bool = false
