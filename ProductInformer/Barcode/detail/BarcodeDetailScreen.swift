@@ -46,7 +46,7 @@ struct BarcodeDetailScreen: View {
             }
         }
         .sheet(isPresented: $viewModel.showScanner) {
-            CodeScannerView { result in
+            MLKitScannerView { result in
                 viewModel.handleScanResult(result: result)
             }
             .onDisappear {

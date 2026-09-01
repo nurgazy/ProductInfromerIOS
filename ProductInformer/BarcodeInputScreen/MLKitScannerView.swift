@@ -3,15 +3,102 @@ import AVFoundation
 import MLKitBarcodeScanning
 import MLKitVision
 
-struct MLKitScannerView: UIViewControllerRepresentable {
-    typealias ResultHandler = (Result<String, ScannerError>) -> Void
+struct MLKitScannerView: View {
+    typealias ResultHandler = (Result<String, MLKitScannerViewController.ScannerError>) -> Void
     var completion: ResultHandler
     
-    enum ScannerError: Error {
-        case notAuthorized
-        case inputDeviceError
-        case sessionFailed
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            // Сканер
+            MLKitScannerRepresentable(completion: completion)
+                .ignoresSafeArea()
+
+            // Визуальный оверлей с рамкой
+            ScannerOverlayView()
+
+            // Кнопка закрытия внизу экрана
+            VStack {
+                Spacer()
+                
+                Button {
+                    dismiss()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .bold))
+                        Text("Закрыть")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 28)
+                    .background(Color.black.opacity(0.65))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
+                }
+                .padding(.bottom, 40)
+            }
+        }
     }
+}
+
+// Визуальная рамка во всю ширину экрана
+private struct ScannerOverlayView: View {
+    private let horizontalPadding: CGFloat = 16
+
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width - (horizontalPadding * 2)
+            let height: CGFloat = 200
+
+            ZStack {
+                // Полупрозрачный затемняющий слой с прозрачным вырезом по центру
+                Color.black.opacity(0.5)
+                    .mask(
+                        CutoutShape(rectSize: CGSize(width: width, height: height))
+                            .fill(style: FillStyle(eoFill: true))
+                    )
+
+                // Белая рамка с закругленными углами
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white, lineWidth: 3)
+                    .frame(width: width, height: height)
+                    .shadow(color: .black.opacity(0.3), radius: 5)
+            }
+        }
+        .ignoresSafeArea()
+    }
+}
+
+// Форма для создания прозрачной области по центру
+private struct CutoutShape: Shape {
+    let rectSize: CGSize
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addRect(rect)
+        
+        let boxRect = CGRect(
+            x: (rect.width - rectSize.width) / 2,
+            y: (rect.height - rectSize.height) / 2,
+            width: rectSize.width,
+            height: rectSize.height
+        )
+        path.addRoundedRect(in: boxRect, cornerSize: CGSize(width: 16, height: 16))
+        return path
+    }
+}
+
+// UIViewControllerRepresentable обертка
+struct MLKitScannerRepresentable: UIViewControllerRepresentable {
+    typealias ResultHandler = (Result<String, MLKitScannerViewController.ScannerError>) -> Void
+    var completion: ResultHandler
 
     func makeUIViewController(context: Context) -> MLKitScannerViewController {
         let viewController = MLKitScannerViewController()
@@ -41,7 +128,7 @@ struct MLKitScannerView: UIViewControllerRepresentable {
             }
         }
 
-        func didFailWithError(error: ScannerError) {
+        func didFailWithError(error: MLKitScannerViewController.ScannerError) {
             guard !didFindCode else { return }
             didFindCode = true
             DispatchQueue.main.async {
@@ -55,21 +142,28 @@ struct MLKitScannerView: UIViewControllerRepresentable {
 
 protocol MLKitScannerDelegate: AnyObject {
     func didDetectBarcode(code: String)
-    func didFailWithError(error: MLKitScannerView.ScannerError)
+    func didFailWithError(error: MLKitScannerViewController.ScannerError)
 }
 
 class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
+    
+    enum ScannerError: Error {
+        case notAuthorized
+        case inputDeviceError
+        case sessionFailed
+    }
+
     weak var delegate: MLKitScannerDelegate?
     
     private let captureSession = AVCaptureSession()
     private var previewLayer: AVCaptureVideoPreviewLayer!
     private lazy var barcodeScanner: BarcodeScanner = {
-        // Выбираем формат сканирования (EAN-13, EAN-8, QR и т.д.)
         let options = BarcodeScannerOptions(formats: [.all])
         return BarcodeScanner.barcodeScanner(options: options)
     }()
     
-    private var isProcessingFrame = false // Флаг для пропуска кадров при высокой нагрузке
+    private var isProcessingFrame = false
+    private var isSessionConfigured = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -84,9 +178,9 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        if !captureSession.isRunning {
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.captureSession.startRunning()
+        if isSessionConfigured && !captureSession.isRunning {
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                self?.captureSession.startRunning()
             }
         }
     }
@@ -117,16 +211,16 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
             guard let self = self else { return }
             
             self.captureSession.beginConfiguration()
-            self.captureSession.sessionPreset = .hd1280x720 // Оптимально для быстрой обработки ML Kit
+            self.captureSession.sessionPreset = .hd1280x720
 
             guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
                   let input = try? AVCaptureDeviceInput(device: camera),
                   self.captureSession.canAddInput(input) else {
+                self.captureSession.commitConfiguration()
                 self.delegate?.didFailWithError(error: .inputDeviceError)
                 return
             }
             
-            // Настройка автофокуса
             try? camera.lockForConfiguration()
             if camera.isFocusModeSupported(.continuousAutoFocus) {
                 camera.focusMode = .continuousAutoFocus
@@ -135,32 +229,34 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
             
             self.captureSession.addInput(input)
 
-            // Вывод кадров для ML Kit
             let videoOutput = AVCaptureVideoDataOutput()
             videoOutput.alwaysDiscardsLateVideoFrames = true
             videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "camera.frame.processing"))
 
             guard self.captureSession.canAddOutput(videoOutput) else {
+                self.captureSession.commitConfiguration()
                 self.delegate?.didFailWithError(error: .sessionFailed)
                 return
             }
             self.captureSession.addOutput(videoOutput)
+
             self.captureSession.commitConfiguration()
+            self.isSessionConfigured = true
 
             DispatchQueue.main.async {
                 self.previewLayer = AVCaptureVideoPreviewLayer(session: self.captureSession)
                 self.previewLayer.videoGravity = .resizeAspectFill
                 self.previewLayer.frame = self.view.bounds
                 self.view.layer.addSublayer(self.previewLayer)
-                
+            }
+
+            if !self.captureSession.isRunning {
                 self.captureSession.startRunning()
             }
         }
     }
 
-    // MARK: - Обработка каждого кадра через ML Kit
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Если предыдущий кадр еще распознается — пробиваем текущий для экономии CPU
         guard !isProcessingFrame else { return }
         isProcessingFrame = true
 

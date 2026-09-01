@@ -193,8 +193,8 @@ class BarcodeDetailVM: ObservableObject {
         barcodeList.removeAll { $0.barcode == item.barcode && $0.barcodeDetailId == item.barcodeDetailId }
     }
     
-    func handleScanResult(result: Result<String, CodeScannerView.ScannerError>) {
-        DispatchQueue.main.async{
+    func handleScanResult(result: Result<String, MLKitScannerViewController.ScannerError>) {
+        DispatchQueue.main.async {
             self.showScanner = false
             
             switch result {
@@ -202,9 +202,6 @@ class BarcodeDetailVM: ObservableObject {
                 self.lastScannedBarcode = code
                 self.findProduct(barcode: code)
             case .failure(let error):
-                if error == .simulatedError {
-                    return
-                }
                 self.alertMessage = "Сканирование: \(error.localizedDescription)"
                 self.showingAlert = true
             }
