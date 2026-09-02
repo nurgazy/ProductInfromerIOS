@@ -1,11 +1,15 @@
 #!/bin/sh
 
-# Install CocoaPods using Homebrew or system gem
+# Устанавливаем кодировку для корректной работы CocoaPods
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+# Устанавливаем CocoaPods на виртуальную машину Xcode Cloud
 brew install cocoapods
 
-# Navigate to the workspace directory containing the Podfile
-# Adjust path if your Podfile is inside an 'ios' subfolder: cd ../ios
+# Переходим в директорию с Podfile (подправьте путь, если Podfile лежит в подпапке)
 cd ..
 
-# Install Pods to generate the missing .xcfilelist files
+# Обновляем репозиторий спецификаций и устанавливаем зависимости
+pod repo update
 pod install
