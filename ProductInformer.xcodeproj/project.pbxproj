@@ -7,15 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		F00F1582A06039EFC3114034 /* Pods_ProductInformer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6469D46EF699167A0EA92CB3 /* Pods_ProductInformer.framework */; };
+		F919C720D07A782C0736C977 /* Pods_ProductInformer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ABAF509763CFC9CCD8D33A36 /* Pods_ProductInformer.framework */; };
 		FCEBE6952F3F6102009E161D /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = FCEBE6942F3F6102009E161D /* GRDB */; };
 		FCEBE6AE2F3FA15B009E161D /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = FCEBE6AD2F3FA15B009E161D /* KeychainAccess */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		6469D46EF699167A0EA92CB3 /* Pods_ProductInformer.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ProductInformer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		AAC3466DB930BB1A09582967 /* Pods-ProductInformer.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ProductInformer.debug.xcconfig"; path = "Target Support Files/Pods-ProductInformer/Pods-ProductInformer.debug.xcconfig"; sourceTree = "<group>"; };
-		E1A0492EFE94884975C7FF48 /* Pods-ProductInformer.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ProductInformer.release.xcconfig"; path = "Target Support Files/Pods-ProductInformer/Pods-ProductInformer.release.xcconfig"; sourceTree = "<group>"; };
+		148FDC1627E141A26D9E8596 /* Pods-ProductInformer.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ProductInformer.release.xcconfig"; path = "Target Support Files/Pods-ProductInformer/Pods-ProductInformer.release.xcconfig"; sourceTree = "<group>"; };
+		ABAF509763CFC9CCD8D33A36 /* Pods_ProductInformer.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ProductInformer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C8AC84BC7A4423E9DC0A1B7B /* Pods-ProductInformer.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ProductInformer.debug.xcconfig"; path = "Target Support Files/Pods-ProductInformer/Pods-ProductInformer.debug.xcconfig"; sourceTree = "<group>"; };
 		FC4DBFD32E9932FC00FBC20A /* ProductInformer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProductInformer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -47,17 +47,17 @@
 			files = (
 				FCEBE6AE2F3FA15B009E161D /* KeychainAccess in Frameworks */,
 				FCEBE6952F3F6102009E161D /* GRDB in Frameworks */,
-				F00F1582A06039EFC3114034 /* Pods_ProductInformer.framework in Frameworks */,
+				F919C720D07A782C0736C977 /* Pods_ProductInformer.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		70BBF87D9034CFED9F1563D8 /* Frameworks */ = {
+		77D0478162AE6EAA2359FCE9 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				6469D46EF699167A0EA92CB3 /* Pods_ProductInformer.framework */,
+				ABAF509763CFC9CCD8D33A36 /* Pods_ProductInformer.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -65,8 +65,8 @@
 		7C1233469315A04577591550 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				AAC3466DB930BB1A09582967 /* Pods-ProductInformer.debug.xcconfig */,
-				E1A0492EFE94884975C7FF48 /* Pods-ProductInformer.release.xcconfig */,
+				C8AC84BC7A4423E9DC0A1B7B /* Pods-ProductInformer.debug.xcconfig */,
+				148FDC1627E141A26D9E8596 /* Pods-ProductInformer.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -77,7 +77,7 @@
 				FC4DBFD52E9932FC00FBC20A /* ProductInformer */,
 				FC4DBFD42E9932FC00FBC20A /* Products */,
 				7C1233469315A04577591550 /* Pods */,
-				70BBF87D9034CFED9F1563D8 /* Frameworks */,
+				77D0478162AE6EAA2359FCE9 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -96,11 +96,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = FC4DBFDE2E9932FD00FBC20A /* Build configuration list for PBXNativeTarget "ProductInformer" */;
 			buildPhases = (
-				448CB928CCAB886177729D23 /* [CP] Check Pods Manifest.lock */,
+				0C423734E1A0299F42FE2623 /* [CP] Check Pods Manifest.lock */,
 				FC4DBFCF2E9932FC00FBC20A /* Sources */,
 				FC4DBFD02E9932FC00FBC20A /* Frameworks */,
 				FC4DBFD12E9932FC00FBC20A /* Resources */,
-				05BEEFEB6CA85D8D94940B16 /* [CP] Embed Pods Frameworks */,
+				741BC4FF9DAD08C7C080FB36 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -143,7 +143,7 @@
 			mainGroup = FC4DBFCA2E9932FC00FBC20A;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB" */,
+				FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB.swift" */,
 				FCEBE6AC2F3FA15B009E161D /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -167,28 +167,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		05BEEFEB6CA85D8D94940B16 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ProductInformer/Pods-ProductInformer-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ProductInformer/Pods-ProductInformer-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ProductInformer/Pods-ProductInformer-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		448CB928CCAB886177729D23 /* [CP] Check Pods Manifest.lock */ = {
+		0C423734E1A0299F42FE2623 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -208,6 +187,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		741BC4FF9DAD08C7C080FB36 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-ProductInformer/Pods-ProductInformer-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-ProductInformer/Pods-ProductInformer-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ProductInformer/Pods-ProductInformer-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -348,7 +344,7 @@
 		};
 		FC4DBFDF2E9932FD00FBC20A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = AAC3466DB930BB1A09582967 /* Pods-ProductInformer.debug.xcconfig */;
+			baseConfigurationReference = C8AC84BC7A4423E9DC0A1B7B /* Pods-ProductInformer.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -386,7 +382,7 @@
 		};
 		FC4DBFE02E9932FD00FBC20A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E1A0492EFE94884975C7FF48 /* Pods-ProductInformer.release.xcconfig */;
+			baseConfigurationReference = 148FDC1627E141A26D9E8596 /* Pods-ProductInformer.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -446,7 +442,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB" */ = {
+		FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/groue/GRDB.swift";
 			requirement = {
@@ -467,7 +463,7 @@
 /* Begin XCSwiftPackageProductDependency section */
 		FCEBE6942F3F6102009E161D /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB" */;
+			package = FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB.swift" */;
 			productName = GRDB;
 		};
 		FCEBE6AD2F3FA15B009E161D /* KeychainAccess */ = {
