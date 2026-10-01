@@ -10,103 +10,104 @@ struct MLKitScannerView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ZStack {
-            // Сканер
-            MLKitScannerRepresentable(completion: completion)
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            let frameWidth = geometry.size.width - 32
+            let frameHeight: CGFloat = 200
+            let frameRect = CGRect(
+                x: 16,
+                y: (geometry.size.height - frameHeight) / 2,
+                width: frameWidth,
+                height: frameHeight
+            )
 
-            // Визуальный оверлей с рамкой
-            ScannerOverlayView()
+            ZStack {
+                // Передаем координаты рамки прямо в контроллер для фильтрации зоны ROI
+                MLKitScannerRepresentable(scanAreaRect: frameRect, completion: completion)
+                    .ignoresSafeArea()
 
-            // Кнопка закрытия внизу экрана
-            VStack {
-                Spacer()
-                
-                Button {
-                    dismiss()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 18, weight: .bold))
-                        Text("Закрыть")
-                            .font(.system(size: 16, weight: .semibold))
+                // Визуальный оверлей с рамкой
+                ScannerOverlayView(scanRect: frameRect)
+
+                // Кнопка закрытия
+                VStack {
+                    Spacer()
+                    
+                    Button {
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 18, weight: .bold))
+                            Text("Закрыть")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 28)
+                        .background(Color.black.opacity(0.65))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
                     }
-                    .foregroundColor(.white)
-                    .padding(.vertical, 14)
-                    .padding(.horizontal, 28)
-                    .background(Color.black.opacity(0.65))
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
-                    .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
+                    .padding(.bottom, 40)
                 }
-                .padding(.bottom, 40)
             }
         }
     }
 }
 
-// Визуальная рамка во всю ширину экрана
+// Визуальная рамка с прозрачным окном
 private struct ScannerOverlayView: View {
-    private let horizontalPadding: CGFloat = 16
+    let scanRect: CGRect
 
     var body: some View {
-        GeometryReader { geometry in
-            let width = geometry.size.width - (horizontalPadding * 2)
-            let height: CGFloat = 200
+        ZStack {
+            Color.black.opacity(0.55)
+                .mask(
+                    CutoutShape(rect: scanRect)
+                        .fill(style: FillStyle(eoFill: true))
+                )
 
-            ZStack {
-                // Полупрозрачный затемняющий слой с прозрачным вырезом по центру
-                Color.black.opacity(0.5)
-                    .mask(
-                        CutoutShape(rectSize: CGSize(width: width, height: height))
-                            .fill(style: FillStyle(eoFill: true))
-                    )
-
-                // Белая рамка с закругленными углами
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.white, lineWidth: 3)
-                    .frame(width: width, height: height)
-                    .shadow(color: .black.opacity(0.3), radius: 5)
-            }
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white, lineWidth: 3)
+                .frame(width: scanRect.width, height: scanRect.height)
+                .position(x: scanRect.midX, y: scanRect.midY)
+                .shadow(color: .black.opacity(0.4), radius: 5)
         }
         .ignoresSafeArea()
     }
 }
 
-// Форма для создания прозрачной области по центру
 private struct CutoutShape: Shape {
-    let rectSize: CGSize
+    let rect: CGRect
 
-    func path(in rect: CGRect) -> Path {
+    func path(in fullBounds: CGRect) -> Path {
         var path = Path()
-        path.addRect(rect)
-        
-        let boxRect = CGRect(
-            x: (rect.width - rectSize.width) / 2,
-            y: (rect.height - rectSize.height) / 2,
-            width: rectSize.width,
-            height: rectSize.height
-        )
-        path.addRoundedRect(in: boxRect, cornerSize: CGSize(width: 16, height: 16))
+        path.addRect(fullBounds)
+        path.addRoundedRect(in: rect, cornerSize: CGSize(width: 16, height: 16))
         return path
     }
 }
 
-// UIViewControllerRepresentable обертка
+// Representable-обертка с передачей scanAreaRect
 struct MLKitScannerRepresentable: UIViewControllerRepresentable {
     typealias ResultHandler = (Result<String, MLKitScannerViewController.ScannerError>) -> Void
+    var scanAreaRect: CGRect
     var completion: ResultHandler
 
     func makeUIViewController(context: Context) -> MLKitScannerViewController {
         let viewController = MLKitScannerViewController()
+        viewController.scanAreaInView = scanAreaRect
         viewController.delegate = context.coordinator
         return viewController
     }
 
-    func updateUIViewController(_ uiViewController: MLKitScannerViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: MLKitScannerViewController, context: Context) {
+        uiViewController.scanAreaInView = scanAreaRect
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(completion: completion)
@@ -154,6 +155,7 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
     }
 
     weak var delegate: MLKitScannerDelegate?
+    var scanAreaInView: CGRect = .zero
     
     private let captureSession = AVCaptureSession()
     private var previewLayer: AVCaptureVideoPreviewLayer!
@@ -165,6 +167,9 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
     private var isProcessingFrame = false
     private var isSessionConfigured = false
     private var hasDetectedBarcode = false
+    
+    // Защита от моментального срабатывания: сканер начинает считывать только через 0.6 сек
+    private var canDetectBarcodes = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -177,8 +182,16 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
         previewLayer?.frame = view.bounds
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        hasDetectedBarcode = false
+        canDetectBarcodes = false
+        
+        // Даем пользователю 0.6 секунды на прицеливание
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            self?.canDetectBarcodes = true
+        }
+
         if isSessionConfigured && !captureSession.isRunning {
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 self?.captureSession.startRunning()
@@ -188,6 +201,7 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        canDetectBarcodes = false
         if captureSession.isRunning {
             captureSession.stopRunning()
         }
@@ -258,25 +272,59 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        guard !hasDetectedBarcode, !isProcessingFrame else { return }
+        // Игнорируем кадры, если еще идет стартовая пауза или штрихкод уже считан
+        guard canDetectBarcodes, !hasDetectedBarcode, !isProcessingFrame else { return }
         isProcessingFrame = true
 
         let image = VisionImage(buffer: sampleBuffer)
         image.orientation = imageOrientation(deviceOrientation: UIDevice.current.orientation, cameraPosition: .back)
 
+        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+            isProcessingFrame = false
+            return
+        }
+        
+        let bufferWidth = CGFloat(CVPixelBufferGetWidth(imageBuffer))
+        let bufferHeight = CGFloat(CVPixelBufferGetHeight(imageBuffer))
+
         barcodeScanner.process(image) { [weak self] barcodes, error in
             guard let self = self else { return }
             defer { self.isProcessingFrame = false }
             
-            guard !self.hasDetectedBarcode else { return }
+            guard self.canDetectBarcodes, !self.hasDetectedBarcode else { return }
             guard error == nil, let barcodes = barcodes, !barcodes.isEmpty else { return }
             
-            if let firstBarcode = barcodes.first, let rawValue = firstBarcode.rawValue {
-                self.hasDetectedBarcode = true
-                self.captureSession.stopRunning() // Мгновенно глушим захват камеры
-                self.delegate?.didDetectBarcode(code: rawValue)
+            // Фильтруем штрихкоды: берем только те, центр которых находится строго внутри рамки
+            for barcode in barcodes {
+                guard let rawValue = barcode.rawValue else { continue }
+                
+                let barcodeCenterInView = self.convertPointToViewCoordinates(
+                    point: CGPoint(x: barcode.frame.midX, y: barcode.frame.midY),
+                    bufferWidth: bufferWidth,
+                    bufferHeight: bufferHeight
+                )
+                
+                // Проверяем попадание центра штрихкода в прямоугольник рамки
+                if self.scanAreaInView.contains(barcodeCenterInView) {
+                    self.hasDetectedBarcode = true
+                    self.canDetectBarcodes = false
+                    self.captureSession.stopRunning()
+                    self.delegate?.didDetectBarcode(code: rawValue)
+                    break
+                }
             }
         }
+    }
+
+    // Преобразование координат кадра камеры в систему координат экрана UI
+    private func convertPointToViewCoordinates(point: CGPoint, bufferWidth: CGFloat, bufferHeight: CGFloat) -> CGPoint {
+        // Для ориентации .portrait ширина и высота буфера инвертированы по отношению к экрану
+        let normalizedPoint = CGPoint(x: point.y / bufferHeight, y: 1.0 - (point.x / bufferWidth))
+        
+        guard let preview = self.previewLayer else {
+            return .zero
+        }
+        return preview.layerPointConverted(fromCaptureDevicePoint: normalizedPoint)
     }
 
     private func imageOrientation(deviceOrientation: UIDeviceOrientation, cameraPosition: AVCaptureDevice.Position) -> UIImage.Orientation {
