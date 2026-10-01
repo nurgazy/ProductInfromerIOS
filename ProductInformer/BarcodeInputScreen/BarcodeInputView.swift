@@ -26,7 +26,6 @@ struct BarcodeInputView: View {
                     .padding(.horizontal)
                 
                 HStack(spacing: 15) {
-                
                     Button {
                         viewModel.isScanning = true
                     } label: {
