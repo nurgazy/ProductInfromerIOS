@@ -28,6 +28,11 @@ struct BarcodeDetailScreen: View {
                         }
                 }
                 
+                if viewModel.isSearching {
+                    ProgressView()
+                        .padding(.vertical, 4)
+                }
+                
                 Divider()
                 actionButtons
             }
@@ -64,7 +69,7 @@ struct BarcodeDetailScreen: View {
                     viewModel.showSpecPicker = false
                 }
             )
-            .presentationDetents([.medium, .large]) // Для iOS 16+ сделаем удобную шторку
+            .presentationDetents([.medium, .large])
         }
         .alert("Внимание", isPresented: $viewModel.showingAlert) {
             Button("OK", role: .cancel) { }
@@ -84,6 +89,7 @@ struct BarcodeDetailScreen: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(viewModel.isSearching || viewModel.isUploading)
                 .tint(.blue)
                 
                 Button(action: { viewModel.showScanner = true }) {
@@ -91,6 +97,7 @@ struct BarcodeDetailScreen: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
+                .disabled(viewModel.isSearching || viewModel.isUploading)
             }
             
             Button(action: { viewModel.uploadTo1C() }) {
@@ -104,7 +111,7 @@ struct BarcodeDetailScreen: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(viewModel.barcodeList.isEmpty || viewModel.isUploading)
+            .disabled(viewModel.barcodeList.isEmpty || viewModel.isUploading || viewModel.isSearching)
             .tint(viewModel.isUploaded ? .gray : .blue)
         }
         .padding()

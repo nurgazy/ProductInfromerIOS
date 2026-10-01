@@ -37,6 +37,7 @@ struct BarcodeInputView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
+                    .disabled(viewModel.isSearching)
                     
                     Button {
                         viewModel.findProduct()
@@ -63,6 +64,8 @@ struct BarcodeInputView: View {
         .modifier(ProductDetailNavigationModifier(viewModel: viewModel))
         .sheet(isPresented: $viewModel.isScanning) {
             MLKitScannerView { result in
+                guard !viewModel.isSearching else { return }
+                
                 switch result {
                 case .success(let code):
                     viewModel.barcode = code

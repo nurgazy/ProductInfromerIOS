@@ -164,6 +164,7 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
     
     private var isProcessingFrame = false
     private var isSessionConfigured = false
+    private var hasDetectedBarcode = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -257,19 +258,23 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        guard !isProcessingFrame else { return }
+        guard !hasDetectedBarcode, !isProcessingFrame else { return }
         isProcessingFrame = true
 
         let image = VisionImage(buffer: sampleBuffer)
         image.orientation = imageOrientation(deviceOrientation: UIDevice.current.orientation, cameraPosition: .back)
 
         barcodeScanner.process(image) { [weak self] barcodes, error in
-            defer { self?.isProcessingFrame = false }
+            guard let self = self else { return }
+            defer { self.isProcessingFrame = false }
             
+            guard !self.hasDetectedBarcode else { return }
             guard error == nil, let barcodes = barcodes, !barcodes.isEmpty else { return }
             
             if let firstBarcode = barcodes.first, let rawValue = firstBarcode.rawValue {
-                self?.delegate?.didDetectBarcode(code: rawValue)
+                self.hasDetectedBarcode = true
+                self.captureSession.stopRunning() // Мгновенно глушим захват камеры
+                self.delegate?.didDetectBarcode(code: rawValue)
             }
         }
     }

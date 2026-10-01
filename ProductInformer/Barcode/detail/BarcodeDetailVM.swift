@@ -31,7 +31,6 @@ class BarcodeDetailVM: ObservableObject {
     
     var lastScannedBarcode: String = ""
 
-    // Вычисляемое свойство для фильтрации списка
     var filteredBarcodeList: [BarcodeDocDetail] {
         if searchText.isEmpty {
             return barcodeList
@@ -112,10 +111,8 @@ class BarcodeDetailVM: ObservableObject {
                 let doc = try await dbQueue.read { db in
                     try BarcodeDoc.fetchOne(db, key: id)
                 }
-                await MainActor.run {
-                    self.curBarcodeDoc = doc
-                    self.commentText = doc?.comment ?? ""
-                }
+                self.curBarcodeDoc = doc
+                self.commentText = doc?.comment ?? ""
             } catch {
                 print("Ошибка загрузки заголовка: \(error)")
             }
@@ -182,10 +179,8 @@ class BarcodeDetailVM: ObservableObject {
                 }
             }
         } catch {
-            Task { @MainActor in
-                self.alertMessage = "Ошибка БД: \(error.localizedDescription)"
-                self.showingAlert = true
-            }
+            self.alertMessage = "Ошибка БД: \(error.localizedDescription)"
+            self.showingAlert = true
         }
     }
 
@@ -194,26 +189,28 @@ class BarcodeDetailVM: ObservableObject {
     }
     
     func handleScanResult(result: Result<String, MLKitScannerViewController.ScannerError>) {
-        DispatchQueue.main.async {
-            self.showScanner = false
-            
-            switch result {
-            case .success(let code):
-                self.lastScannedBarcode = code
-                self.findProduct(barcode: code)
-            case .failure(let error):
-                self.alertMessage = "Сканирование: \(error.localizedDescription)"
-                self.showingAlert = true
-            }
+        // Блокируем повторное срабатывание, если предыдущий поиск еще активен
+        guard !isSearching else { return }
+        self.showScanner = false
+        
+        switch result {
+        case .success(let code):
+            self.lastScannedBarcode = code
+            self.findProduct(barcode: code)
+        case .failure(let error):
+            self.alertMessage = "Сканирование: \(error.localizedDescription)"
+            self.showingAlert = true
         }
     }
     
     func findProduct(barcode: String, isManual: Bool = false) {
+        // Предотвращаем запуск нескольких сетевых запросов одновременно
+        guard !isSearching else { return }
         
         self.curBarcodeDocDetail = nil
         
         guard !barcode.isEmpty else {
-            self.alertMessage =  "❌ Введите или отсканируйте штрихкод."
+            self.alertMessage = "❌ Введите или отсканируйте штрихкод."
             self.showingAlert = true
             return
         }
@@ -221,10 +218,15 @@ class BarcodeDetailVM: ObservableObject {
         self.lastScannedBarcode = barcode
         
         guard let url = buildSearchURL(barcode: barcode) else {
-            self.alertMessage =  "❌ Невозможно построить корректный URL."
+            self.alertMessage = "❌ Невозможно построить корректный URL."
             self.showingAlert = true
             return
         }
+        
+        // Синхронно блокируем дальнейшие попытки до ухода в Task
+        self.isSearching = true
+        self.showingAlert = false
+        self.alertMessage = ""
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -236,14 +238,8 @@ class BarcodeDetailVM: ObservableObject {
         }
 
         Task {
-            await MainActor.run {
-                self.isSearching = true
-                self.showingAlert = false
-                self.alertMessage = ""
-            }
-            
             defer {
-                Task { @MainActor in self.isSearching = false } // 🟢 END LOADING
+                self.isSearching = false
             }
             
             do {
@@ -253,77 +249,64 @@ class BarcodeDetailVM: ObservableObject {
                 }
                 
                 guard let jsonString = String(data: data, encoding: .utf8) else {
-                    await MainActor.run {
-                        self.alertMessage = "❌ Ошибка: Не удалось прочитать ответ сервера как тек."
-                        self.showingAlert = true
-                    }
+                    self.alertMessage = "❌ Ошибка: Не удалось прочитать ответ сервера как текст."
+                    self.showingAlert = true
                     return
                 }
                 
-                await MainActor.run {
-                    if httpResponse.statusCode == 200 {
-                        
-                        if let jsonData = jsonString.data(using: .utf8) {
-                            do {
-                                let decoder = JSONDecoder()
-                                let productResponse = try decoder.decode(ProductResponse.self, from: jsonData)
-                                if !productResponse.result{
-                                    self.alertMessage = "Товар не найден."
-                                    self.showingAlert = true
-                                }else{
-                                    let specs = productResponse.characteristics ?? []
-                                    
-                                    if specs.count > 1 {
-                                        self.pendingProductResponse = productResponse
-                                        self.availableSpecs = specs
-                                        self.showSpecPicker = true
-                                        
-                                    } else {
-                                        let newDetail = self.getBarcodeDocDetail(productData: productResponse)
-                                        if var finalDetail = newDetail {
-                                            finalDetail.barcode = barcode
-                                            self.curBarcodeDocDetail = finalDetail
-                                        }
-                                        
-                                        if connectionSettings.isCyclicScan && !isManual {
-                                            self.addProductWithQuantity(1)
-                                            self.restartScanner()
-                                        } else {
-                                            self.showQuantityDialog = true
-                                        }
+                if httpResponse.statusCode == 200 {
+                    if let jsonData = jsonString.data(using: .utf8) {
+                        do {
+                            let decoder = JSONDecoder()
+                            let productResponse = try decoder.decode(ProductResponse.self, from: jsonData)
+                            if !productResponse.result {
+                                self.alertMessage = "Товар не найден."
+                                self.showingAlert = true
+                            } else {
+                                let specs = productResponse.characteristics ?? []
+                                
+                                if specs.count > 1 {
+                                    self.pendingProductResponse = productResponse
+                                    self.availableSpecs = specs
+                                    self.showSpecPicker = true
+                                } else {
+                                    let newDetail = self.getBarcodeDocDetail(productData: productResponse)
+                                    if var finalDetail = newDetail {
+                                        finalDetail.barcode = barcode
+                                        self.curBarcodeDocDetail = finalDetail
                                     }
                                     
+                                    if connectionSettings.isCyclicScan && !isManual {
+                                        self.addProductWithQuantity(1)
+                                        self.restartScanner()
+                                    } else {
+                                        self.showQuantityDialog = true
+                                    }
                                 }
-                            } catch {
-                                self.alertMessage = "❌ Ошибка декодирования: \(error.localizedDescription)"
-                                self.showingAlert = true
                             }
-                        } else {
-                            self.alertMessage = "Не удалось преобразовать данные."
+                        } catch {
+                            self.alertMessage = "❌ Ошибка декодирования: \(error.localizedDescription)"
                             self.showingAlert = true
                         }
-                        
-                        if self.showingAlert { return }
-                        
-                    } else if httpResponse.statusCode == 401 {
-                        self.alertMessage = "❌ Ошибка 401: Неверный пользователь/пароль. Проверьте настройки подключения."
-                        self.showingAlert = true
                     } else {
-                        self.alertMessage = "⚠️ Ошибка сервера: Код \(httpResponse.statusCode). Ответ: \(jsonString.prefix(100))..."
+                        self.alertMessage = "Не удалось преобразовать данные."
                         self.showingAlert = true
                     }
-                }
-            } catch {
-                await MainActor.run {
-                    self.alertMessage = "❌ Не удалось подключиться к \(self.connectionSettings.serverAddress). Причина: \(error.localizedDescription)"
+                } else if httpResponse.statusCode == 401 {
+                    self.alertMessage = "❌ Ошибка 401: Неверный пользователь/пароль. Проверьте настройки подключения."
+                    self.showingAlert = true
+                } else {
+                    self.alertMessage = "⚠️ Ошибка сервера: Код \(httpResponse.statusCode). Ответ: \(jsonString.prefix(100))..."
                     self.showingAlert = true
                 }
+            } catch {
+                self.alertMessage = "❌ Не удалось подключиться к \(self.connectionSettings.serverAddress). Причина: \(error.localizedDescription)"
+                self.showingAlert = true
             }
         }
     }
     
     private func buildSearchURL(barcode: String) -> URL? {
-        // Базовый путь остается прежним
         let basePath = "/hs/ProductInformation/products"
         
         var components = URLComponents()
@@ -340,7 +323,6 @@ class BarcodeDetailVM: ObservableObject {
         )
 
         components.queryItems = queryItems
-
         return components.url
     }
     
@@ -380,7 +362,6 @@ class BarcodeDetailVM: ObservableObject {
     }
     
     func uploadTo1C() {
-        // 1. Проверки перед отправкой
         guard let docId = self.barcodeDocId, !barcodeList.isEmpty else {
             self.alertMessage = "Документ не сохранен или список товаров пуст"
             self.showingAlert = true
@@ -400,8 +381,8 @@ class BarcodeDetailVM: ObservableObject {
         }
         
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss" // Формат, который 1С воспринимает идеально
-        formatter.locale = Locale(identifier: "en_US_POSIX") // Чтобы избежать проблем с 12/24 часовым форматом
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
 
         let dateStringFor1C = formatter.string(from: curBarcodeDoc?.creationTimestamp ?? Date())
         
@@ -416,7 +397,6 @@ class BarcodeDetailVM: ObservableObject {
 
         Task {
             do {
-                // 2. Формируем URL (базовый путь из вашего VM)
                 guard let url = constructUploadURL() else { return }
                 
                 var request = URLRequest(url: url)
@@ -431,40 +411,30 @@ class BarcodeDetailVM: ObservableObject {
                 
                 request.httpBody = try JSONEncoder().encode(uploadData)
 
-                // 3. Отправка
                 let (_, response) = try await URLSession.shared.data(for: request)
                 
                 if let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) {
-                    // 4. Успех: Обновляем статус в локальной БД
                     try await dbQueue.write { db in
                         if var doc = try BarcodeDoc.fetchOne(db, key: docId) {
                             doc.status = "UPLOADED"
                             try doc.update(db)
-                            
                         }
                     }
                     
-                    await MainActor.run {
-                        self.isUploading = false
-                        self.curBarcodeDoc?.status = "UPLOADED"
-                    }
-                    
+                    self.isUploading = false
+                    self.curBarcodeDoc?.status = "UPLOADED"
                 } else {
                     throw URLError(.badServerResponse)
                 }
             } catch {
-                await MainActor.run {
-                    self.isUploading = false
-                    self.alertMessage = "Ошибка выгрузки: \(error.localizedDescription)"
-                    self.showingAlert = true
-                }
+                self.isUploading = false
+                self.alertMessage = "Ошибка выгрузки: \(error.localizedDescription)"
+                self.showingAlert = true
             }
         }
     }
 
-    // Вспомогательный метод для URL
     private func constructUploadURL() -> URL? {
-        
         let basePath = "/hs/ProductInformation/Document"
         
         var components = URLComponents()
@@ -477,14 +447,13 @@ class BarcodeDetailVM: ObservableObject {
     }
     
     private func restartScanner() {
-        self.isSearching = false
         self.showScanner = false
         
         Task {
             try? await Task.sleep(for: .seconds(0.5))
-            await MainActor.run {
-                self.showScanner = true
-            }
+            // Открываем следующий скан только если предыдущий поиск завершен
+            guard !self.isSearching else { return }
+            self.showScanner = true
         }
     }
     
@@ -523,7 +492,6 @@ class BarcodeDetailVM: ObservableObject {
         self.showManualInput = false
         self.findProduct(barcode: trimmed, isManual: true)
     }
-    
 }
 
 enum DatabaseError: Error {
