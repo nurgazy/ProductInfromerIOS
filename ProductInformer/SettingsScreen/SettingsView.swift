@@ -11,7 +11,7 @@ struct SettingsView: View {
     init(coordinatorPath: Binding<NavigationPath?> = .constant(nil), currentRoot: Binding<String>) {
         self._coordinatorPath = coordinatorPath
         self._currentRoot = currentRoot
-        self._viewModel = StateObject(wrappedValue: SettingsViewModel(coordinatorPath:coordinatorPath, currentRoot: currentRoot))
+        self._viewModel = StateObject(wrappedValue: SettingsViewModel(coordinatorPath: coordinatorPath, currentRoot: currentRoot))
     }
     
     var body: some View {
@@ -53,9 +53,9 @@ struct SettingsView: View {
     
     @ViewBuilder
     func GeneralSettingsTab() -> some View {
-        Form{
-            Group{
-                HStack{
+        Form {
+            Group {
+                HStack {
                     Text("Протокол")
                     Spacer()
                     Picker("", selection: $viewModel.protocolSelection) {
@@ -66,13 +66,16 @@ struct SettingsView: View {
                     }
                 }
                 
-                HStack{
+                HStack {
                     Text("Сервер")
                     Spacer()
-                    TextField("Сервер", text: $viewModel.serverAddress).autocapitalization(.none).keyboardType(.URL).multilineTextAlignment(.trailing)
+                    TextField("Сервер", text: $viewModel.serverAddress)
+                        .autocapitalization(.none)
+                        .keyboardType(.URL)
+                        .multilineTextAlignment(.trailing)
                 }
                 
-                HStack{
+                HStack {
                     Text("Порт")
                     Spacer()
                     TextField("Порт", text:
@@ -81,25 +84,51 @@ struct SettingsView: View {
                                         if let newPort = Int($0), newPort > 0, newPort <= 65535 { viewModel.port = newPort }
                                     }
                                 ))
-                    .keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
                 }
                 
-                HStack{
+                HStack {
                     Text("Имя публикации")
                     Spacer()
-                    TextField("Имя публикации", text: $viewModel.publicationName).autocapitalization(.none).multilineTextAlignment(.trailing)
+                    TextField("Имя публикации", text: $viewModel.publicationName)
+                        .autocapitalization(.none)
+                        .multilineTextAlignment(.trailing)
                 }
                 
-                HStack{
+                HStack {
                     Text("Пользователь")
                     Spacer()
-                    TextField("Пользователь", text: $viewModel.username).autocapitalization(.none).multilineTextAlignment(.trailing)
+                    TextField("Пользователь", text: $viewModel.username)
+                        .autocapitalization(.none)
+                        .multilineTextAlignment(.trailing)
                 }
                 
-                HStack{
+                HStack {
                     Text("Пароль")
                     Spacer()
-                    SecureField("Пароль", text: $viewModel.password).multilineTextAlignment(.trailing)
+                    
+                    if viewModel.hasSavedPassword && viewModel.newPasswordInput.isEmpty {
+                        // Показываем фиксированную маску из 8 точек вне зависимости от реальной длины пароля
+                        HStack(spacing: 8) {
+                            Text(viewModel.dummyMask)
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 18, weight: .bold))
+                            
+                            Button {
+                                viewModel.clearSavedPassword()
+                            } label: {
+                                Image(systemName: "pencil.circle.fill")
+                                    .foregroundColor(.blue)
+                                    .imageScale(.medium)
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                    } else {
+                        // Поле ввода нового пароля
+                        SecureField("Новый пароль", text: $viewModel.newPasswordInput)
+                            .multilineTextAlignment(.trailing)
+                    }
                 }
             }
         }
@@ -108,7 +137,7 @@ struct SettingsView: View {
     @ViewBuilder
     func AdditionalSettingsTab() -> some View {
         Form {
-            VStack{
+            VStack {
                 Toggle("Все характеристики", isOn: $viewModel.isFullSpecific)
                 
                 Toggle("Циклическое сканирование", isOn: $viewModel.isCyclicScanning)
@@ -128,22 +157,7 @@ struct SettingsView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
-            
             .background(.ultraThinMaterial)
         }
     }
-}
-
-#Preview {
-    struct SettingsViewPreview: View {
-        @State private var mockCurrentRoot: String = "settings"
-        @State private var mockNavigationPath: NavigationPath? = nil
-        
-        var body: some View {
-            NavigationView {
-                SettingsView(coordinatorPath: $mockNavigationPath, currentRoot: $mockCurrentRoot)
-            }
-        }
-    }
-    return SettingsViewPreview()
 }
