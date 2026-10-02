@@ -272,50 +272,81 @@ class MLKitScannerViewController: UIViewController, AVCaptureVideoDataOutputSamp
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Игнорируем кадры, если еще идет стартовая пауза или штрихкод уже считан
         guard canDetectBarcodes, !hasDetectedBarcode, !isProcessingFrame else { return }
         isProcessingFrame = true
-
-        let image = VisionImage(buffer: sampleBuffer)
-        image.orientation = imageOrientation(deviceOrientation: UIDevice.current.orientation, cameraPosition: .back)
 
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             isProcessingFrame = false
             return
         }
-        
-        let bufferWidth = CGFloat(CVPixelBufferGetWidth(imageBuffer))
-        let bufferHeight = CGFloat(CVPixelBufferGetHeight(imageBuffer))
 
-        barcodeScanner.process(image) { [weak self] barcodes, error in
+        // Обрезаем буфер строго по области белой рамки
+        guard let croppedImage = cropToScanArea(imageBuffer: imageBuffer) else {
+            isProcessingFrame = false
+            return
+        }
+
+        let visionImage = VisionImage(image: croppedImage)
+        visionImage.orientation = .up // Изображение уже правильно ориентировано после обрезки
+
+        barcodeScanner.process(visionImage) { [weak self] barcodes, error in
             guard let self = self else { return }
             defer { self.isProcessingFrame = false }
             
             guard self.canDetectBarcodes, !self.hasDetectedBarcode else { return }
             guard error == nil, let barcodes = barcodes, !barcodes.isEmpty else { return }
             
-            // Фильтруем штрихкоды: берем только те, центр которых находится строго внутри рамки
-            for barcode in barcodes {
-                guard let rawValue = barcode.rawValue else { continue }
-                
-                let barcodeCenterInView = self.convertPointToViewCoordinates(
-                    point: CGPoint(x: barcode.frame.midX, y: barcode.frame.midY),
-                    bufferWidth: bufferWidth,
-                    bufferHeight: bufferHeight
-                )
-                
-                // Проверяем попадание центра штрихкода в прямоугольник рамки
-                if self.scanAreaInView.contains(barcodeCenterInView) {
-                    self.hasDetectedBarcode = true
-                    self.canDetectBarcodes = false
-                    self.captureSession.stopRunning()
-                    self.delegate?.didDetectBarcode(code: rawValue)
-                    break
-                }
+            if let firstBarcode = barcodes.first, let rawValue = firstBarcode.rawValue {
+                self.hasDetectedBarcode = true
+                self.canDetectBarcodes = false
+                self.captureSession.stopRunning()
+                self.delegate?.didDetectBarcode(code: rawValue)
             }
         }
     }
 
+    // Вырезает из кадра камеры только то, что пользователь видит внутри белой рамки
+    private func cropToScanArea(imageBuffer: CVImageBuffer) -> UIImage? {
+        let ciImage = CIImage(cvImageBuffer: imageBuffer)
+        
+        // Поворачиваем кадр камеры в портретную ориентацию
+        let rotatedCIImage = ciImage.oriented(.right)
+        
+        guard let preview = self.previewLayer else { return nil }
+        
+        let viewBounds = preview.bounds
+        guard viewBounds.width > 0, viewBounds.height > 0 else { return nil }
+        
+        let imageSize = rotatedCIImage.extent.size
+        
+        // Коэффициенты масштабирования видео под размер экрана (.resizeAspectFill)
+        let scaleX = imageSize.width / viewBounds.width
+        let scaleY = imageSize.height / viewBounds.height
+        let scale = max(scaleX, scaleY)
+        
+        let scaledWidth = viewBounds.width * scale
+        let scaledHeight = viewBounds.height * scale
+        let offsetX = (scaledWidth - imageSize.width) / 2.0
+        let offsetY = (scaledHeight - imageSize.height) / 2.0
+        
+        // Перевод координат рамки из экрана в координаты повернутого изображения
+        // CIImage имеет начало координат (0,0) в левом нижнем углу
+        let cropX = (scanAreaInView.origin.x * scale) - offsetX
+        let cropY = imageSize.height - ((scanAreaInView.origin.y + scanAreaInView.height) * scale) + offsetY
+        let cropWidth = scanAreaInView.width * scale
+        let cropHeight = scanAreaInView.height * scale
+        
+        let cropRect = CGRect(x: max(0, cropX), y: max(0, cropY), width: cropWidth, height: cropHeight)
+        
+        guard cropRect.width > 0, cropRect.height > 0 else { return nil }
+        
+        let croppedCI = rotatedCIImage.cropped(to: cropRect)
+        let context = CIContext(options: nil)
+        guard let cgImage = context.createCGImage(croppedCI, from: croppedCI.extent) else { return nil }
+        
+        return UIImage(cgImage: cgImage)
+    }
+    
     // Преобразование координат кадра камеры в систему координат экрана UI
     private func convertPointToViewCoordinates(point: CGPoint, bufferWidth: CGFloat, bufferHeight: CGFloat) -> CGPoint {
         // Для ориентации .portrait ширина и высота буфера инвертированы по отношению к экрану
