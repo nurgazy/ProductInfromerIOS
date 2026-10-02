@@ -5,6 +5,9 @@ struct BarcodeInputView: View {
     @Binding var coordinatorPath: NavigationPath?
     @StateObject private var viewModel: BarcodeInputViewModel
     
+    // Управление фокусом клавиатуры
+    @FocusState private var isInputActive: Bool
+    
     init(coordinatorPath: Binding<NavigationPath?> = .constant(nil)) {
         self._coordinatorPath = coordinatorPath
         self._viewModel = StateObject(wrappedValue: BarcodeInputViewModel(coordinatorPath: coordinatorPath))
@@ -12,7 +15,6 @@ struct BarcodeInputView: View {
     
     var body: some View {
         VStack {
-            
             Spacer()
             
             VStack(spacing: 15) {
@@ -23,10 +25,20 @@ struct BarcodeInputView: View {
                     .cornerRadius(10)
                     .keyboardType(.numberPad)
                     .autocorrectionDisabled(true)
+                    .focused($isInputActive) // Привязка фокуса
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button("Готово") {
+                                isInputActive = false // Скрывает цифровую клавиатуру
+                            }
+                        }
+                    }
                     .padding(.horizontal)
                 
                 HStack(spacing: 15) {
                     Button {
+                        isInputActive = false // Скрываем клавиатуру перед открытием сканера
                         viewModel.isScanning = true
                     } label: {
                         Label("Сканировать", systemImage: "barcode.viewfinder")
@@ -39,6 +51,7 @@ struct BarcodeInputView: View {
                     .disabled(viewModel.isSearching)
                     
                     Button {
+                        isInputActive = false // Скрываем клавиатуру при запуске поиска
                         viewModel.findProduct()
                     } label: {
                         Label("Найти", systemImage: "magnifyingglass")
@@ -48,11 +61,11 @@ struct BarcodeInputView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
-                    .disabled(viewModel.isSearching) 
+                    .disabled(viewModel.isSearching)
                 }
                 .padding(.horizontal)
                 
-                if(viewModel.isSearching) {
+                if viewModel.isSearching {
                     ProgressView()
                 }
                 
@@ -60,6 +73,11 @@ struct BarcodeInputView: View {
             .padding(.bottom, 40)
         }
         .padding(.top, 30)
+        // Закрытие клавиатуры при тапе в любое пустое место экрана
+        .contentShape(Rectangle())
+        .onTapGesture {
+            isInputActive = false
+        }
         .modifier(ProductDetailNavigationModifier(viewModel: viewModel))
         .sheet(isPresented: $viewModel.isScanning) {
             MLKitScannerView { result in
@@ -85,7 +103,6 @@ struct BarcodeInputView: View {
         }
         .navigationTitle("Ввод штрихкода")
     }
-
 }
 
 private struct ProductDetailNavigationModifier: ViewModifier {
