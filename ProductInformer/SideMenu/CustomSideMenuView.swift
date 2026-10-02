@@ -20,6 +20,15 @@ struct CustomSideMenuView: View {
                     .onTapGesture {
                         menuState.toggleMenu()
                     }
+                    // Закрытие меню свайпом влево по оверлею
+                    .gesture(
+                        DragGesture(minimumDistance: 20)
+                            .onEnded { value in
+                                if value.translation.width < -30 {
+                                    menuState.toggleMenu()
+                                }
+                            }
+                    )
             }
             
             // Основное меню
@@ -45,10 +54,19 @@ struct CustomSideMenuView: View {
                 }
                 .frame(width: menuState.menuWidth)
                 .background(Color(UIColor.systemBackground))
+                // Жест смахивания влево по самой панели меню
+                .gesture(
+                    DragGesture(minimumDistance: 20)
+                        .onEnded { value in
+                            // Если палец двигался справа налево
+                            if value.translation.width < -40 {
+                                menuState.toggleMenu()
+                            }
+                        }
+                )
                 
                 Spacer() // Занимает оставшуюся часть экрана
             }
-            
             // Смещение меню для анимации выезда
             .offset(x: menuState.isMenuShowing ? 0 : -menuState.menuWidth)
             .animation(.easeOut(duration: 0.3), value: menuState.isMenuShowing)
