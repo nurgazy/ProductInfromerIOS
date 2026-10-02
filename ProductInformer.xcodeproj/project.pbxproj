@@ -154,7 +154,7 @@
 			mainGroup = FC4DBFCA2E9932FC00FBC20A;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+				FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB" */,
 				FCEBE6AC2F3FA15B009E161D /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -187,9 +187,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ProductInformer/Pods-ProductInformer-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ProductInformer/Pods-ProductInformer-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -362,7 +366,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -379,7 +383,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.6;
+				MARKETING_VERSION = 1.1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = "nurgazy-bolushbekov.ProductInformer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -400,7 +404,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -417,7 +421,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.6;
+				MARKETING_VERSION = 1.1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = "nurgazy-bolushbekov.ProductInformer";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -454,7 +458,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+		FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/groue/GRDB.swift";
 			requirement = {
@@ -475,7 +479,7 @@
 /* Begin XCSwiftPackageProductDependency section */
 		FCEBE6942F3F6102009E161D /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			package = FCEBE6932F3F6102009E161D /* XCRemoteSwiftPackageReference "GRDB" */;
 			productName = GRDB;
 		};
 		FCEBE6AD2F3FA15B009E161D /* KeychainAccess */ = {
