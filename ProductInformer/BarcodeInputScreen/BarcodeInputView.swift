@@ -25,12 +25,12 @@ struct BarcodeInputView: View {
                     .cornerRadius(10)
                     .keyboardType(.numberPad)
                     .autocorrectionDisabled(true)
-                    .focused($isInputActive) // Привязка фокуса
+                    .focused($isInputActive)
                     .toolbar {
                         ToolbarItemGroup(placement: .keyboard) {
                             Spacer()
                             Button("Готово") {
-                                isInputActive = false // Скрывает цифровую клавиатуру
+                                isInputActive = false
                             }
                         }
                     }
@@ -38,7 +38,7 @@ struct BarcodeInputView: View {
                 
                 HStack(spacing: 15) {
                     Button {
-                        isInputActive = false // Скрываем клавиатуру перед открытием сканера
+                        isInputActive = false
                         viewModel.isScanning = true
                     } label: {
                         Label("Сканировать", systemImage: "barcode.viewfinder")
@@ -51,7 +51,7 @@ struct BarcodeInputView: View {
                     .disabled(viewModel.isSearching)
                     
                     Button {
-                        isInputActive = false // Скрываем клавиатуру при запуске поиска
+                        isInputActive = false
                         viewModel.findProduct()
                     } label: {
                         Label("Найти", systemImage: "magnifyingglass")
@@ -73,7 +73,6 @@ struct BarcodeInputView: View {
             .padding(.bottom, 40)
         }
         .padding(.top, 30)
-        // Закрытие клавиатуры при тапе в любое пустое место экрана
         .contentShape(Rectangle())
         .onTapGesture {
             isInputActive = false
@@ -81,18 +80,7 @@ struct BarcodeInputView: View {
         .modifier(ProductDetailNavigationModifier(viewModel: viewModel))
         .sheet(isPresented: $viewModel.isScanning) {
             MLKitScannerView { result in
-                guard !viewModel.isSearching else { return }
-                
-                switch result {
-                case .success(let code):
-                    viewModel.barcode = code
-                    viewModel.isScanning = false
-                    viewModel.findProduct()
-                case .failure(let error):
-                    viewModel.isScanning = false
-                    viewModel.alertMessage = "Ошибка сканера: \(error)"
-                    viewModel.showingAlert = true
-                }
+                viewModel.handleScanResult(result: result)
             }
             .ignoresSafeArea()
         }

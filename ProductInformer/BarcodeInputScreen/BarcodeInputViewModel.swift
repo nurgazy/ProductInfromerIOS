@@ -21,7 +21,7 @@ final class BarcodeInputViewModel: ObservableObject {
     private var coordinatorPath: Binding<NavigationPath?>
     
     init(coordinatorPath: Binding<NavigationPath?>) {
-        self.coordinatorPath = coordinatorPath // Сохраняем привязку
+        self.coordinatorPath = coordinatorPath
         self.connectionSettings = BarcodeInputViewModel.loadConnectionSettings()
     }
     
@@ -51,24 +51,36 @@ final class BarcodeInputViewModel: ObservableObject {
         )
     }
     
-    // Логика, которая запускается при успешном сканировании
-    func handleScanResult(result: Result<String, CodeScannerView.ScannerError>) {
+    // Логика обработки результата со сканера
+    func handleScanResult(result: Result<String, MLKitScannerViewController.ScannerError>) {
         guard !isSearching else { return }
-        self.isScanning = false // Закрываем модальное окно сканера
+        
+        // Закрываем окно сканера
+        self.isScanning = false
         
         switch result {
         case .success(let code):
             self.barcode = code
-            // После успешного сканирования сразу запускаем поиск продукта
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.findProduct()
+            // Ждем завершения анимации закрытия sheet перед стартом запроса и перехода
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                self?.findProduct()
             }
+            
         case .failure(let error):
-            if error == .simulatedError {
-                return
+            let message: String
+            switch error {
+            case .barcodeNotFound:
+                message = "Штрихкод не распознан. Попробуйте навести камеру ровнее и ближе."
+            case .notAuthorized:
+                message = "Нет доступа к камере. Включите разрешение в Настройках."
+            case .inputDeviceError, .sessionFailed:
+                message = "Ошибка камеры: \(error.localizedDescription)"
             }
-            self.alertMessage = "Сканирование: \(error.localizedDescription)"
-            self.showingAlert = true
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                self?.alertMessage = message
+                self?.showingAlert = true
+            }
         }
     }
     
@@ -77,13 +89,13 @@ final class BarcodeInputViewModel: ObservableObject {
         guard !isSearching else { return }
         
         guard !barcode.isEmpty else {
-            self.alertMessage =  "❌ Введите или отсканируйте штрихкод."
+            self.alertMessage = "❌ Введите или отсканируйте штрихкод."
             self.showingAlert = true
             return
         }
         
         guard let url = buildSearchURL(barcode: barcode) else {
-            self.alertMessage =  "❌ Невозможно построить корректный URL."
+            self.alertMessage = "❌ Невозможно построить корректный URL."
             self.showingAlert = true
             return
         }
@@ -102,15 +114,14 @@ final class BarcodeInputViewModel: ObservableObject {
         
         // 2. Выполнение асинхронного запроса
         Task {
-            
             await MainActor.run {
                 self.isSearching = true
                 self.showingAlert = false
                 self.alertMessage = ""
-            } // 🟢 START LOADING
+            }
             
             defer {
-                Task { @MainActor in self.isSearching = false } // 🟢 END LOADING
+                Task { @MainActor in self.isSearching = false }
             }
 
             do {
@@ -119,7 +130,6 @@ final class BarcodeInputViewModel: ObservableObject {
                     throw URLError(.badServerResponse)
                 }
                 
-                // 3. Получаем сырую строку JSON
                 guard let jsonString = String(data: data, encoding: .utf8) else {
                     await MainActor.run {
                         self.alertMessage = "❌ Ошибка: Не удалось прочитать ответ сервера как текст."
@@ -130,12 +140,11 @@ final class BarcodeInputViewModel: ObservableObject {
                 
                 await MainActor.run {
                     if httpResponse.statusCode == 200 {
-                        
                         if let jsonData = jsonString.data(using: .utf8) {
                             do {
                                 let decoder = JSONDecoder()
                                 let productResponse = try decoder.decode(ProductResponse.self, from: jsonData)
-                                if !productResponse.result{
+                                if !productResponse.result {
                                     self.alertMessage = "Товар не найден."
                                     self.showingAlert = true
                                 }
@@ -160,18 +169,15 @@ final class BarcodeInputViewModel: ObservableObject {
                     }
                 }
             } catch {
-                // ❌ Ошибка сети/домена
                 await MainActor.run {
                     self.alertMessage = "❌ Ошибка сети: Не удалось подключиться к \(self.connectionSettings.serverAddress). Причина: \(error.localizedDescription)"
                     self.showingAlert = true
-
                 }
             }
         }
     }
     
     private func buildSearchURL(barcode: String) -> URL? {
-        // Базовый путь остается прежним
         let basePath = "/hs/ProductInformation/Info"
         
         var components = URLComponents()
@@ -189,22 +195,19 @@ final class BarcodeInputViewModel: ObservableObject {
         )
 
         components.queryItems = queryItems
-
         return components.url
     }
     
     private func navigateToProductDetail(productString: String) {
         Task { @MainActor in
-            // Сохраняем JSON, чтобы использовать его в NavigationLink для iOS 15-
             self.productDetailJSONString = productString
             
             if #available(iOS 16.0, *) {
-                if coordinatorPath.wrappedValue != nil{
+                if coordinatorPath.wrappedValue != nil {
                     let target = AppNavigationTarget(destinationID: "productDetail", productString: productString)
                     coordinatorPath.wrappedValue?.append(AppNavigation.view(target))
                 }
             } else {
-                // Use NavigationLink's isActive binding for iOS 15-
                 isActiveLink = true
             }
         }
