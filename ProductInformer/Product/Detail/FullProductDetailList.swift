@@ -5,64 +5,97 @@ struct FullProductDetailList: View {
     
     var body: some View {
         List {
-            
             if let characteristics = product.characteristics, !characteristics.isEmpty {
-                ForEach(characteristics, id: \.uuid1C) { characteristic in
+                ForEach(Array(characteristics.enumerated()), id: \.offset) { _, characteristic in
                     CharacteristicDetailSection(characteristic: characteristic)
                 }
             } else {
-                Text("Характеристики и цены не указаны")
+                Text("Характеристики не указаны")
                     .foregroundColor(.secondary)
             }
-            
         }
         .listStyle(.insetGrouped)
     }
 }
 
-// Вспомогательные структуры для деталей
 struct CharacteristicDetailSection: View {
     let characteristic: Characteristic
     
-    @State private var isAllCharacteristicsExpanded: Bool = false
+    @State private var isAllCharacteristicsExpanded: Bool = true
     @State private var isStocksExpanded: Bool = true
     @State private var isPricesExpanded: Bool = true
     
+    private var title: String {
+        let trimmed = characteristic.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Основная характеристика" : trimmed
+    }
+    
     var body: some View {
-//        Section(header: Text("\(characteristic.name)").font(.headline)) {
-        DisclosureGroup(characteristic.name, isExpanded: $isAllCharacteristicsExpanded) {
-            DisclosureGroup("Остатки (В наличии/Доступно)", isExpanded: $isStocksExpanded) {
-                ForEach(characteristic.stocks ?? [], id: \.warehouse) { stock in
-                    StockDetailRow(stock: stock)
-                }
-                if ((characteristic.stocks?.isEmpty) == nil) {
-                    Text("Нет данных об остатках.").foregroundColor(.gray)
+        DisclosureGroup(title, isExpanded: $isAllCharacteristicsExpanded) {
+            DisclosureGroup("Остатки (В наличии / Доступно)", isExpanded: $isStocksExpanded) {
+                if let stocks = characteristic.stocks, !stocks.isEmpty {
+                    ForEach(Array(stocks.enumerated()), id: \.offset) { _, stock in
+                        StockDetailRow(stock: stock)
+                    }
+                } else {
+                    HStack {
+                        Text("Нет на складе")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("0 шт")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+                    .padding(.vertical, 4)
                 }
             }
             
             DisclosureGroup("Цены", isExpanded: $isPricesExpanded) {
-                ForEach(characteristic.prices ?? [], id: \.priceType) { price in
-                    PriceDetailRow(price: price)
-                }
-                if ((characteristic.prices?.isEmpty) == nil) {
-                    Text("Нет данных о ценах.").foregroundColor(.gray)
+                if let prices = characteristic.prices, !prices.isEmpty {
+                    ForEach(Array(prices.enumerated()), id: \.offset) { _, price in
+                        PriceDetailRow(price: price)
+                    }
+                } else {
+                    Text("Цены не указаны")
+                        .foregroundColor(.secondary)
                 }
             }
         }
-//        }
     }
 }
 
 struct StockDetailRow: View {
     let stock: Stock
     
+    private var isOutOfStock: Bool {
+        stock.inStock <= 0 || stock.warehouse.localizedCaseInsensitiveContains("нет в наличии")
+    }
+    
     var body: some View {
-        HStack(spacing: 5) {
-            Text("Склад: \(stock.warehouse)").font(.subheadline).bold()
+        HStack(alignment: .center, spacing: 8) {
+            Text(stock.warehouse)
+                .font(.subheadline)
+                .fontWeight(.medium)
+            
             Spacer()
-            Text("\(stock.inStock) / \(stock.available)")
+            
+            if isOutOfStock {
+                Text("Нет в наличии")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.red)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.red.opacity(0.12))
+                    .cornerRadius(6)
+            } else {
+                Text("\(stock.inStock) / \(stock.available) \(stock.unit ?? "шт")")
+                    .font(.subheadline)
+                    .foregroundColor(.primary)
+            }
         }
-        .padding(.vertical, 5)
+        .padding(.vertical, 4)
     }
 }
 
@@ -82,14 +115,12 @@ struct PriceDetailRow: View {
     
     var body: some View {
         HStack {
-            Text("\(price.priceType): ")
+            Text("\(price.priceType):")
             Spacer()
-            // Форматируем цену до двух знаков после запятой
             Text("\(formattedPrice) \(price.currency)")
                 .fontWeight(.medium)
                 .foregroundColor(.green)
         }
-        .padding(.vertical, 5)
+        .padding(.vertical, 4)
     }
 }
-

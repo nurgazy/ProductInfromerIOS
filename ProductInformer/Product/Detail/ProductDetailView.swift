@@ -19,7 +19,7 @@ struct ProductDetailView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
-                        if let article = product.nomenclature.article {
+                        if let article = product.nomenclature.article, !article.isEmpty {
                             Text("Артикул: \(article)")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
@@ -27,6 +27,22 @@ struct ProductDetailView: View {
                     }
                     .padding()
                     .background(Color(UIColor.secondarySystemBackground))
+                    
+                    // Предупреждение об отсутствии на складе
+                    if (product.nomenclature.quantityBalance ?? 0) <= 0 {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                            Text("Товар отсутствует на остатках")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                        .background(Color.orange.opacity(0.15))
+                    }
                     
                     Divider()
                     
@@ -58,9 +74,7 @@ struct ProductDetailView: View {
         }
     }
     
-    // 3. Логика декодирования
     private func decodeProductData() {
-        // Защита от повторного декодирования
         guard decodedProduct == nil && decodingError == nil else { return }
 
         guard let data = productString.data(using: .utf8) else {
@@ -84,8 +98,6 @@ struct ProductDetailView: View {
     }
 }
 
-
-// Представление для отображения ошибок
 struct ErrorView: View {
     let error: String
     let rawData: String
